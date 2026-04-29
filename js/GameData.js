@@ -37,9 +37,9 @@ export var runningOnAndroid = false;
 if (window.location.href.includes("thegg.games")) {
 	window.location.replace("https://skudpaisho.com");
 }
-if (shouldRedirectIfNotHttps() && window.location.href.includes("http://")) {
-	window.location.replace(window.location.href.replace("http://", "https://"));
-}
+// if (shouldRedirectIfNotHttps() && window.location.href.includes("http://")) {
+// 	window.location.replace(window.location.href.replace("http://", "https://"));
+// }
 
 export function shouldRedirectIfNotHttps() {
 	return false;
