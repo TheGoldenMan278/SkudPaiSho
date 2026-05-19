@@ -56,6 +56,7 @@ import { MCTS } from '../ai/MCTS';
 import { RED, SkudPaiShoTile, WHITE } from './SkudPaiShoTile';
 import { SkudAIv1 } from '../ai/SkudAIv1';
 import { SkudStrategicAI } from '../ai/SkudStrategicAI';
+import { SkudChessAI } from '../ai/SkudAI_ChessStyle';
 import { SkudMctsGame } from './SkudMctsGame';
 import { SkudPaiShoActuator } from './SkudPaiShoActuator';
 import { SkudPaiSho3DActuator } from './SkudPaiSho3DActuator';
@@ -66,6 +67,7 @@ import {
 	SkudPaiShoNotationBuilder,
 	SkudPaiShoNotationMove,
 } from './SkudPaiShoGameNotation';
+import { SkudChessAI } from '../ai/SkudAI_ChessStyle';
 
 export var SkudConstants = {
 	preferencesKey: "SkudPaiShoPreferencesKey"
@@ -968,7 +970,8 @@ export class SkudPaiShoController {
 	getAiList() {
 		return [
 			// new SkudStrategicAI(), 
-			new SkudAIv1()
+			new SkudAIv1(),
+			new SkudChessAI()
 		];
 	}
 
