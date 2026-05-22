@@ -35,11 +35,13 @@ export function SkudChessAI() {
 	this.player = null;
 	this.moveNum = 0;
 	this.helper = new SkudAiChessHelp();
+	this.startTime = performance.now();
+	this.timeLimit = 10000; // ms
 }
 
-//
+// =========================================================
 // Required method implementations to interface with controller
-//
+// =========================================================
 SkudChessAI.prototype.getName = function() {
 	return "Chess Style AI";
 };
@@ -61,6 +63,7 @@ SkudChessAI.prototype.setPlayer = function(playerName) {
 SkudChessAI.prototype.getMove = function(game, moveNum) {
 	// console.log("Chess AI V1", this.player)
 	this.moveNum = moveNum;
+	this.startTime = performance.now();
 
 	// Move 0: Strategic accent tile selection
 	if (moveNum === 0) return this.selectAccentTiles(game);
@@ -75,24 +78,74 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	var bestMove = null;
 	var bestScore = -Infinity;
 
-	for (var i = 0; i < moves.length; i++) {
-		var move = moves[i];
-		var score = this.evaluateMove(game, move);
-
-		// Immediate win detection
-		if (score >= 999999999) return move;
-
-		// Add small random factor to break ties and add variety
-		score += Math.random() * 2;
-
-		if (score > bestScore) {
-			bestScore = score;
-			bestMove = move;
+	try {
+		for (var i = 0; i < moves.length; i++) {
+			var move = moves[i];
+			let copyGame = game.getCopy();
+			copyGame.runNotationMove(move);
+	
+			var score = this.minimax(copyGame, 2);
+	
+			// Immediate win detection
+			if (score >= 999999999) return move;
+	
+			// Add small random factor to break ties and add variety
+			score += Math.random() * 2;
+	
+			if (score > bestScore) {
+				bestScore = score;
+				bestMove = move;
+			}
 		}
-	}
+		console.log("AI thinking time:", performance.now() - this.startTime)
+		return bestMove;
+	} catch (e) {
+        console.warn("AI failed or timed out, using fallback move:", e);
+    }
 
+	// Use the best move from the latest depth before timeout, fallback to random move if none was found to avoid game greeze
+	if (!bestMove) return moves[Math.floor(Math.random() * moves.length)];
 	return bestMove;
 };
+
+// =========================================================
+// Search Functions
+// =========================================================
+
+SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
+	// Abort if we have passed thinking time limit
+    if (performance.now() - this.startTime > this.timeLimit) throw new Error("TIMEOUT");
+
+	if (depth === 0) return this.evaluate(game);
+
+    const moves = this.helper.getPossibleMoves(game, this.player);
+
+    if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (let move of moves) {
+            let copy = game.getCopy();
+            copy.runNotationMove(move);
+
+            let score = this.minimax(copy, depth - 1, false);
+            maxEval = Math.max(maxEval, score);
+        }
+        return maxEval;
+    } else {
+        let minEval = Infinity;
+        for (let move of moves) {
+            let copy = game.getCopy();
+            copy.runNotationMove(move);
+
+            let score = this.minimax(copy, depth - 1, true);
+            minEval = Math.min(minEval, score);
+        }
+        return minEval;
+    }
+};
+
+// =========================================================
+// Evaluation Functions
+// =========================================================
 
 /**
  * Select accent tiles strategically instead of randomly.
@@ -104,24 +157,19 @@ SkudChessAI.prototype.selectAccentTiles = function(game) {
 };
 
 /**
- * Evaluate a move by simulating it and scoring the resulting position.
+ * Evaluate a position and assign a score based on how good it is for the player.
  */
-SkudChessAI.prototype.evaluateMove = function(game, move) {
-	var copyGame = game.getCopy();
-	copyGame.runNotationMove(move);
-
+SkudChessAI.prototype.evaluate = function(game) {
 	var score = 0;
 	var opponent = this.helper.getOpponent();
 
 	// === IMMEDIATE WIN/LOSS DETECTION ===
 
-	// Check for our win
-	if (copyGame.board.winners.includes(this.player)) {
-		return 999999999;
-	}
+	// Check if we won and give highest score
+	if (game.board.winners.includes(this.player)) return 999999999;
 
 	// Check if opponent could win on their next turn (threat)
-	var opponentThreatLevel = this.detectOpponentThreats(copyGame, opponent);
+	var opponentThreatLevel = this.detectOpponentThreats(game, opponent);
 	if (opponentThreatLevel > 0) {
 		// Penalize moves that don't address threats
 		score -= opponentThreatLevel * 100;
@@ -129,64 +177,46 @@ SkudChessAI.prototype.evaluateMove = function(game, move) {
 
 	// === HARMONY EVALUATION ===
 
-	// Our harmonies
-	var harmonyBefore = game.board.harmonyManager.numHarmoniesForPlayer(this.player);
-	var harmonyAfter = copyGame.board.harmonyManager.numHarmoniesForPlayer(this.player);
-	var harmonyDelta = harmonyAfter - harmonyBefore;
-
-	score += harmonyDelta * 30;
+	// Add points for our harmonies and subtract for enemy harmonies
+	var numHarmonies = game.board.harmonyManager.numHarmoniesForPlayer(this.player);
+	var oppNumHarmonies = game.board.harmonyManager.numHarmoniesForPlayer(opponent);
+	score += (numHarmonies * 30) - (oppNumHarmonies * 25);
 
 	// Harmonies crossing center are more valuable
-	var centerHarmBefore = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
-	var centerHarmAfter = copyGame.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
-
-	if (centerHarmAfter > centerHarmBefore) {
-		score += 60;
-	}
-
-	// Opponent's harmonies (disruption is good)
-	var oppHarmBefore = game.board.harmonyManager.numHarmoniesForPlayer(opponent);
-	var oppHarmAfter = copyGame.board.harmonyManager.numHarmoniesForPlayer(opponent);
-	var oppHarmDelta = oppHarmAfter - oppHarmBefore;
-
-	score -= oppHarmDelta * 25; // Penalize opponent gains, reward opponent losses
+	var numCenterHarmonies = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
+	score += 30 * numCenterHarmonies;
 
 	// === RING FORMATION ===
 
-	var surroundness = copyGame.board.getSurroundness(this.player);
-	var surroundnessBefore = game.board.getSurroundness(this.player);
-
 	// Building surroundness is important for ring victory
-	if (surroundness > surroundnessBefore) score += 15;
+	var surroundness = game.board.getSurroundness(this.player);
+	var oppSurroundness = game.board.getSurroundness(opponent);
+	score += (surroundness - oppSurroundness) * 15;
 
 	// If we have good surroundness, prioritize ring length
 	if (surroundness >= 3) {
-		var ringLengthBefore = game.board.harmonyManager.ringLengthForPlayer(this.player);
-		var ringLengthAfter = copyGame.board.harmonyManager.ringLengthForPlayer(this.player);
-
-		if (ringLengthAfter > ringLengthBefore) {
-			score += 25 + (ringLengthAfter * 5);
-		}
+		var ringLength = game.board.harmonyManager.ringLengthForPlayer(this.player);
+		var oppRingLength = game.board.harmonyManager.ringLengthForPlayer(opponent);
+		score += (ringLength - oppRingLength) * 25;
 	}
 
 	// === POSITION QUALITY ===
 
 	// Tiles in gardens (controlled territory)
-	var gardenTilesBefore = game.board.numTilesInGardensForPlayer(this.player);
-	var gardenTilesAfter = copyGame.board.numTilesInGardensForPlayer(this.player);
+	var gardenTiles = game.board.numTilesInGardensForPlayer(this.player);
+	var oppGardenTiles = game.board.numTilesInGardensForPlayer(opponent);
+	score += (gardenTiles - oppGardenTiles) * 8;
 
-	score += (gardenTilesAfter - gardenTilesBefore) * 8;
+	// // Capturing opponent tiles
+	// var oppTilesBefore = game.board.numTilesOnBoardForPlayer(opponent);
+	// var oppTilesAfter = copyGame.board.numTilesOnBoardForPlayer(opponent);
 
-	// Capturing opponent tiles
-	var oppTilesBefore = game.board.numTilesOnBoardForPlayer(opponent);
-	var oppTilesAfter = copyGame.board.numTilesOnBoardForPlayer(opponent);
-
-	if (oppTilesAfter < oppTilesBefore) score += 12;
+	// if (oppTilesAfter < oppTilesBefore) score += 12;
 
 	// === HARMONY POTENTIAL ===
 
 	// Evaluate tiles that could form harmonies in future moves
-	score += this.evaluateHarmonyPotential(copyGame, this.player) * 3;
+	score += this.evaluateHarmonyPotential(game, this.player) * 3;
 
 	// === ENDGAME AWARENESS ===
 
@@ -195,26 +225,24 @@ SkudChessAI.prototype.evaluateMove = function(game, move) {
 	var basicFlowersLeft = this.countBasicFlowers(ourTilePile);
 
 	// In endgame, harmonies crossing center matter most
-	if (basicFlowersLeft <= 2) score += centerHarmAfter * 40;
+	if (basicFlowersLeft <= 2) score += numCenterHarmonies * 40;
 
 	// === PLANTING BONUS ===
 
 	// Slight preference for planting to develop the position
-	if (move.moveType === PLANTING) {
-		score += 5;
-	}
+	// if (move.moveType === PLANTING) score += 5;
 
 	// === HARMONY BONUS ACTIONS ===
 	// Big score boost for moves that have bonus actions attached
 	// These are moves that successfully chain combo actions
-	if (move.hasHarmonyBonus && move.hasHarmonyBonus()) {
-		score += 100; // Significant bonus for utilizing harmony extra actions
+	// if (move.hasHarmonyBonus && move.hasHarmonyBonus()) {
+	// 	score += 100; // Significant bonus for utilizing harmony extra actions
 		
-		// Extra bonus if the bonus action is a plant (develops board)
-		if (move.bonusTileCode && move.moveType === ARRANGING) {
-			score += 40; // Arranging with a bonus plant is very productive
-		}
-	}
+	// 	// Extra bonus if the bonus action is a plant (develops board)
+	// 	if (move.bonusTileCode && move.moveType === ARRANGING) {
+	// 		score += 40; // Arranging with a bonus plant is very productive
+	// 	}
+	// }
 
 	return score;
 };
