@@ -18,7 +18,10 @@ import {
 	newGatesRule,
 	newSpecialFlowerRules,
 } from './SkudPaiShoRules';
+import { SkudPaiShoActuator } from './SkudPaiShoActuator';
 import { SkudPaiShoBoard } from './SkudPaiShoBoard';
+import { SkudPaiShoBoardPoint } from './SkudPaiShoBoardPoint';
+import { SkudPaiShoNotationMove } from './SkudPaiShoGameNotation';
 import { SkudPaiShoTile } from './SkudPaiShoTile';
 import { SkudPaiShoTileManager } from './SkudPaiShoTileManager';
 import { getOpponentName } from '../pai-sho-common/PaiShoPlayerHelp';
@@ -26,19 +29,28 @@ import { setGameLogText } from '../GameState';
 
 export class SkudPaiShoGameManager {
 	constructor(actuator, ignoreActuate, isCopy) {
+		/** @type {string} */
 		this.gameLogText = '';
+		/** @type {boolean} Don't show visuals. */
 		this.isCopy = isCopy;
-
+		
+		/** @type {SkudPaiShoActuator} */
 		this.actuator = actuator;
-
+		
+		/** @type {SkudPaiShoTileManager} */
 		this.tileManager = new SkudPaiShoTileManager();
+		/** @type {PaiShoMarkingManager} */
 		this.markingManager = new PaiShoMarkingManager();
-
+		
 		this.setup(ignoreActuate);
+		/** @type {string[]} */
 		this.endGameWinners = [];
 	}
 
-	// Set up the game
+	/**
+	 * Called once to setup the game
+	 * @param {boolean} ignoreActuate - Set true if this game doesn't need visuals (Ex. Copy game state used for AI thinking)
+	 */
 	setup(ignoreActuate) {
 		this.board = new SkudPaiShoBoard();
 
@@ -48,7 +60,11 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
-	// Sends the updated board to the actuator
+	/**
+	 * Sends the updated board to the actuator
+	 * @param {SkudPaiShoNotationMove} moveToAnimate
+	 * @param {number} moveAnimationBeginStep - Optional animation step
+	 */
 	actuate(moveToAnimate, moveAnimationBeginStep) {
 		if (this.isCopy) {
 			return;
@@ -57,6 +73,13 @@ export class SkudPaiShoGameManager {
 		setGameLogText(this.gameLogText);
 	}
 
+	/**
+	 * Execute SkudPaiShoNotationMove
+	 * @param {SkudPaiShoNotationMove} move
+	 * @param {boolean} withActuate - Reflect move in visuals
+	 * @param {number} moveAnimationBeginStep - Optional animation step
+	 * @returns {boolean | Object} False if move isn't allowed; if valid move, gives object with bonusAllowed, movedTile, capturedTile
+	 */
 	runNotationMove(move, withActuate, moveAnimationBeginStep) {
 		debug("Running Move(" + (withActuate ? "" : "Not ") + "Actuated): " + move.fullMoveText);
 
@@ -165,14 +188,28 @@ export class SkudPaiShoGameManager {
 		return bonusAllowed;
 	}
 
+	/**
+	 * Set this.gameLogText for choose accent tile move
+	 * @param {SkudPaiShoNotationMove} move
+	 */
 	buildChooseAccentTileGameLogText(move) {
 		this.gameLogText = move.moveNum + move.playerCode + '. '
 			+ move.player + ' chose Accent Tiles ' + move.accentTiles;
 	}
+	/**
+	 * Set this.gameLogText for planting tile move
+	 * @param {SkudPaiShoNotationMove} move
+	 * @param {SkudPaiShoTile} tile
+	 */
 	buildPlantingGameLogText(move, tile) {
 		this.gameLogText = move.moveNum + move.playerCode + '. '
 			+ move.player + ' Planted ' + tile.getName() + ' at ' + move.endPoint.pointText;
 	}
+	/**
+	 * Set this.gameLogText for arranging tile move
+	 * @param {SkudPaiShoNotationMove} move
+	 * @param {Object} moveResults - Contains: bonusAllowed, movedTile, capturedTile
+	 */
 	buildArrangingGameLogText(move, moveResults) {
 		if (!moveResults) {
 			return "Invalid Move :(";
@@ -187,6 +224,11 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Set POSSIBLE_MOVE for all SkudPaiShoBoardPoints where tile in given boardPoint can move
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @param {boolean} ignoreActuate - Don't reflect valid move points in visual
+	 */
 	revealPossibleMovePoints(boardPoint, ignoreActuate) {
 		if (!boardPoint.hasTile()) {
 			return;
@@ -198,6 +240,11 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Remove POSSIBLE_MOVE from all SkudPaiShoBoardPoints
+	 * @param {boolean} ignoreActuate - Don't reflect move in visual
+	 * @param {SkudPaiShoNotationMove} moveToAnimate - Optional move to animate if not ignoreActuate
+	 */
 	hidePossibleMovePoints(ignoreActuate, moveToAnimate) {
 		this.board.removePossibleMovePoints();
 		this.tileManager.removeSelectedTileFlags();
@@ -206,6 +253,13 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE to open gates
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {SkudPaiShoTile} tile - Tile to plant
+	 * @param {number} moveNum
+	 * @param {boolean} ignoreActuate - Don't open gates in visual
+	 */
 	revealOpenGates(player, tile, moveNum, ignoreActuate) {
 		if (!gameOptionEnabled(OPTION_INFORMAL_START) && moveNum === 2) {
 			// guest selecting first tile
@@ -219,6 +273,11 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Checks if player can use their harmony bonus move to plant
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {boolean}
+	 */
 	playerCanBonusPlant(player) {
 		if (!newGatesRule) {
 			return true;
@@ -235,6 +294,11 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE to open gates where special flower can be planted
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {SkudPaiShoTile} tile - Special flower tile to plant
+	 */
 	revealSpecialFlowerPlacementPoints(player, tile) {
 		if (!newSpecialFlowerRules) {
 			this.revealOpenGates(player, tile);
@@ -245,24 +309,45 @@ export class SkudPaiShoGameManager {
 		this.actuate();
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE to all points where accent tile can be placed
+	 * @param {SkudPaiShoTile} tile - Accent tile to place
+	 */
 	revealPossiblePlacementPoints(tile) {
 		this.board.revealPossiblePlacementPoints(tile);
 		this.actuate();
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE to all points where boat can shift target tile
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Point where boat was placed
+	 */
 	revealBoatBonusPoints(boardPoint) {
 		this.board.revealBoatBonusPoints(boardPoint);
 		this.actuate();
 	}
 
+	/**
+	 * Returns if "HOST", "GUEST", or "BOTH PLAYERS" has any basic flower tiles left.
+	 * @returns Returns null if neither player has any basic flower left.
+	 */
 	aPlayerIsOutOfBasicFlowerTiles() {
 		return this.tileManager.aPlayerIsOutOfBasicFlowerTiles();
 	}
 
+	/**
+	 * Checks if given player has both Special Flowers left unplayed.
+	 * @param {string} playerName - "HOST" or "GUEST"
+	 * @returns Returns null if neither player has any basic flower left.
+	 */
 	playerHasNotPlayedEitherSpecialTile(playerName) {
 		return this.tileManager.playerHasBothSpecialTilesRemaining(playerName);
 	}
 
+	/**
+	 * Checks for winner(s).
+	 * @returns {?string} "HOST", "GUEST", "BOTH PLAYERS", or null if no winners
+	 */
 	getWinner() {
 		if (this.board.winners.length === 1) {
 			return this.board.winners[0];
@@ -275,6 +360,10 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Checks if win or tie exists. If so, checks if reason is from harmony ring or player ran out of flowers to play
+	 * @returns {?string}
+	 */
 	getWinReason() {
 		if (this.board.winners.length === 1) {
 			return " created a Harmony Ring and won the game!";
@@ -287,6 +376,10 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * If win exists, give standard win type code to PaiShoMain.js
+	 * @returns {?number}
+	 */
 	getWinResultTypeCode() {
 		if (this.board.winners.length === 1) {
 			return 1;	// Harmony Ring is 1
@@ -297,6 +390,10 @@ export class SkudPaiShoGameManager {
 		}
 	}
 
+	/**
+	 * Get new deep copy of SkudPaiShoGameManager
+	 * @returns {SkudPaiShoGameManager}
+	 */
 	getCopy() {
 		const copyGame = new SkudPaiShoGameManager(this.actuator, true, true);
 		copyGame.board = this.board.getCopy();
@@ -306,6 +403,10 @@ export class SkudPaiShoGameManager {
 		return copyGame;
 	}
 
+	/**
+	 * Get player for next turn based on this.lastPlayerName
+	 * @returns {string} player
+	 */
 	getNextPlayerName() {
 		if (this.lastPlayerName === HOST) {
 			return GUEST;

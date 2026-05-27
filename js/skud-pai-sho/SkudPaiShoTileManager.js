@@ -22,7 +22,14 @@ import {
 	hostPlayerCode,
 } from '../pai-sho-common/PaiShoPlayerHelp';
 
+/**
+ * Manages all SkudPaiShoTile classes for the board
+ * @class
+ * @property {SkudPaiShoTile[]} hostTiles - Array of host's SkudPaiShoTiles
+ * @property {SkudPaiShoTile[]} guestTiles - Array of guest's SkudPaiShoTiles
+ */
 export class SkudPaiShoTileManager {
+	/** @param {boolean} forActuating - Manager is only for actuating UI (Not gameplay logic) */
 	constructor(forActuating) {
 		if (forActuating) {
 			this.hostTiles = this.loadOneOfEach('H');
@@ -37,6 +44,11 @@ export class SkudPaiShoTileManager {
 		this.additionalAncientOasisCount = 0;
 	}
 
+	/**
+	 * Loads starting list of tiles based on rule set.
+	 * @param {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	loadTileSet(ownerCode) {
 		if (simpleCanonRules) {
 			return this.loadSimpleCanonSet(ownerCode);
@@ -45,6 +57,11 @@ export class SkudPaiShoTileManager {
 		}
 	}
 
+	/**
+	 * Loads starting list of tiles for normal rule set.
+	 * @param {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	loadSkudSet(ownerCode) {
 		const tiles = [];
 
@@ -86,6 +103,11 @@ export class SkudPaiShoTileManager {
 		return tiles;
 	}
 
+	/**
+	 * Loads starting list of tiles for simple canon rule set.
+	 * @param {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	loadSimpleCanonSet(ownerCode) {
 		const tiles = [];
 
@@ -111,6 +133,11 @@ export class SkudPaiShoTileManager {
 		return tiles;
 	}
 
+	/**
+	 * Loads one of every kind of tile for UI actuator.
+	 * @param {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	loadOneOfEach(ownerCode) {
 		const tiles = [];
 
@@ -138,6 +165,12 @@ export class SkudPaiShoTileManager {
 		return tiles;
 	}
 
+	/**
+	 * Splice a tile with given tileCode out of given player's tileset.
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {string} tileCode
+	 * @returns {?SkudPaiShoTile}
+	 */
 	grabTile(player, tileCode) {
 		let tilePile = this.hostTiles;
 		if (player === GUEST) {
@@ -168,6 +201,10 @@ export class SkudPaiShoTileManager {
 		return tile;
 	}
 
+	/**
+	 * Gets number of accent tiles each player starts with for the current rule set.
+	 * @returns {number}
+	 */
 	numberOfAccentTilesPerPlayerSet() {
 		const tileSet = this.loadSkudSet(hostPlayerCode);
 		let accentTileCount = 0;
@@ -179,6 +216,13 @@ export class SkudPaiShoTileManager {
 		return accentTileCount;
 	}
 
+	/**
+	 * Get reference to player tile based on tile code or unique ID without removing from tileset.
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {string} tileCode - 1-2 Letter code representing tile type
+	 * @param {number} tileId - Unique ID
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	peekTile(player, tileCode, tileId) {
 		let tilePile = this.hostTiles;
 		if (player === GUEST) {
@@ -208,6 +252,7 @@ export class SkudPaiShoTileManager {
 		return tile;
 	}
 
+	/** Set selectedFromPile to false for all tiles for Host and Guest. */
 	removeSelectedTileFlags() {
 		this.hostTiles.forEach(function(tile) {
 			tile.selectedFromPile = false;
@@ -217,6 +262,7 @@ export class SkudPaiShoTileManager {
 		});
 	}
 
+	/** Set selectedFromPile to false for all tiles for given player. */
 	unselectTiles(player) {
 		let tilePile = this.hostTiles;
 		if (player === GUEST) {
@@ -228,6 +274,10 @@ export class SkudPaiShoTileManager {
 		});
 	}
 
+	/**
+	 * Reinserts tile into its owner's tileset.
+	 * @param {SkudPaiShoTile} tile
+	 */
 	putTileBack(tile) {
 		const player = tile.ownerName;
 		let tilePile = this.hostTiles;
@@ -238,6 +288,10 @@ export class SkudPaiShoTileManager {
 		tilePile.push(tile);
 	}
 
+	/**
+	 * Returns if "HOST", "GUEST", or "BOTH PLAYERS" has any basic flower tiles left.
+	 * @returns {?string} Returns null if neither player has any basic flower left.
+	 */
 	aPlayerIsOutOfBasicFlowerTiles() {
 		// Check Host
 		let hostHasBasic = false;
@@ -265,6 +319,10 @@ export class SkudPaiShoTileManager {
 		}
 	}
 
+	/**
+	 * Checks which player has more unplayed accent tiles.
+	 * @returns {string} - "HOST" or "GUEST"
+	 */
 	getPlayerWithMoreAccentTiles() {
 		let hostCount = 0;
 		for (let i = 0; i < this.hostTiles.length; i++) {
@@ -287,6 +345,11 @@ export class SkudPaiShoTileManager {
 		}
 	}
 
+	/**
+	 * Checks if given player has both Special Flowers left unplayed.
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {boolean}
+	 */
 	playerHasBothSpecialTilesRemaining(player) {
 		let tilePile = this.hostTiles;
 		if (player === GUEST) {
@@ -304,6 +367,10 @@ export class SkudPaiShoTileManager {
 		return specialTileCount > 1;
 	}
 
+	/**
+	 * Get new deep copy of SkudPaiShoTileManager.
+	 * @returns {SkudPaiShoTileManager}
+	 */
 	getCopy() {
 		const copy = new SkudPaiShoTileManager();
 

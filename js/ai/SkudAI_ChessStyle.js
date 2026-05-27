@@ -42,14 +42,27 @@ export function SkudChessAI() {
 // =========================================================
 // Required method implementations to interface with controller
 // =========================================================
+
+/**
+ * AI name to display on UI.
+ * @returns {string}
+ */
 SkudChessAI.prototype.getName = function() {
 	return "Chess Style AI";
 };
 
+/**
+ * AI description to display on UI.
+ * @returns {string}
+ */
 SkudChessAI.prototype.getMessage = function() {
 	return "A more strategic opponent that uses the same techniques as popular chess programs.";
 };
 
+/**
+ * Sets AI player as "HOST" or "GUEST"
+ * @param {string} playerName
+ */
 SkudChessAI.prototype.setPlayer = function(playerName) {
 	this.player = playerName;
 };
@@ -112,6 +125,13 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 // Search Functions
 // =========================================================
 
+/**
+ * Recursive function to look at future moves to determine which move is best.
+ * @param {SkudPaiShoGameManager} game - Copy of game state.
+ * @param {number} depth - Number of moves into the future to look.
+ * @param {boolean} isMaximizing - Do we want to maximize or minimize score (Is it our turn or opponent's turn).
+ * @returns {number} Max/Min score found in search.
+ */
 SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
 	// Abort if we have passed thinking time limit
     if (performance.now() - this.startTime > this.timeLimit) throw new Error("TIMEOUT");
@@ -158,6 +178,8 @@ SkudChessAI.prototype.selectAccentTiles = function(game) {
 
 /**
  * Evaluate a position and assign a score based on how good it is for the player.
+ * @param {SkudPaiShoGameManager} game - Game state to be analyzed.
+ * @returns {number} Score.
  */
 SkudChessAI.prototype.evaluate = function(game) {
 	var score = 0;
@@ -250,6 +272,9 @@ SkudChessAI.prototype.evaluate = function(game) {
 /**
  * Detect if the opponent has threatening positions that could lead to a win.
  * Returns a threat level (0 = no threat, higher = more dangerous)
+ * @param {SkudPaiShoGameManager} game - Game state to be analyzed.
+ * @param {string} opponent - "HOST" or "GUEST".
+ * @returns {number} Threat Level.
  */
 SkudChessAI.prototype.detectOpponentThreats = function(game, opponent) {
 	var threatLevel = 0;
@@ -281,6 +306,9 @@ SkudChessAI.prototype.detectOpponentThreats = function(game, opponent) {
 /**
  * Evaluate the potential for future harmonies based on tile positions.
  * Looks at tiles that are adjacent to empty spaces that could complete harmonies.
+ * @param {SkudPaiShoGameManager} game - Game state to be analyzed.
+ * @param {string} player - "HOST" or "GUEST".
+ * @returns {number} Harmony Potential.
  */
 SkudChessAI.prototype.evaluateHarmonyPotential = function(game, player) {
 	var potential = 0;
@@ -293,7 +321,7 @@ SkudChessAI.prototype.evaluateHarmonyPotential = function(game, player) {
 				var tile = point.tile;
 				if (tile.type === BASIC_FLOWER || tile.type === SPECIAL_FLOWER) {
 					// Count adjacent empty spaces that could extend harmonies
-					potential += this.countAdjacentPotential(game, row, col, tile);
+					potential += this.countAdjacentPotential(game, row, col);
 				}
 			}
 		}
@@ -304,8 +332,12 @@ SkudChessAI.prototype.evaluateHarmonyPotential = function(game, player) {
 
 /**
  * Count adjacent positions that could potentially form harmonies.
+ * @param {SkudPaiShoGameManager} game - Game state to be analyzed.
+ * @param {number} row
+ * @param {number} col
+ * @returns {number} Harmony Potential.
  */
-SkudChessAI.prototype.countAdjacentPotential = function(game, row, col, tile) {
+SkudChessAI.prototype.countAdjacentPotential = function(game, row, col) {
 	var potential = 0;
 	var directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 

@@ -25,12 +25,31 @@ export var RED = "Red";
 export var WHITE = "White";
 
 export var tileId = 1;
+/** Increment Unique Id by 1 each time new tile is created */
 export function tileIdIncrement() {
 	tileId++;
 	return tileId;
 }
 
+/**
+ * Represents a Skud Pai Sho Tile
+ * @class
+ * @property {string} code - 1-2 Letter Code to define tile type (Ex. R3 = Rose, L = White Lotus, W = Wheel)
+ * @property {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+ * @property {string} ownerName - "HOST" or "GUEST"
+ * @property {number} id - Unique ID, increments by 1 for each new tile
+ * @property {boolean} drained - Is drained
+ * @property {boolean} selectedFromPile - Is selected from pile
+ * @property {string} type - "BASIC_FLOWER" or "SPECIAL_FLOWER" or "ACCENT_TILE"
+ * @property {string} basicColorCode - "R" or "W": Red or White for Basic Flowers
+ * @property {string} basicValue - "1", "2", or "3": Movement amount for Basic Flowers
+ * @property {string} basicColorName - "RED" or "WHITE" for Basic Flowers
+ */
 export class SkudPaiShoTile {
+	/**
+	 * @param {string} code - 1-2 Letter Code to define tile type (Ex. R3 = Rose, L = White Lotus, W = Wheel)
+	 * @param {string} ownerCode - "H" or "G" for "HOST" or "GUEST"
+	 */
 	constructor(code, ownerCode) {
 		this.code = code;
 		this.ownerCode = ownerCode;
@@ -66,6 +85,7 @@ export class SkudPaiShoTile {
 		}
 	}
 
+	/** Set this.accentType based on this.code */
 	setAccentInfo() {
 		if (this.code === 'R') {
 			this.accentType = ROCK;
@@ -84,6 +104,7 @@ export class SkudPaiShoTile {
 		}
 	}
 
+	/** Set this.specialFlowerType based on this.code */
 	setSpecialFlowerInfo() {
 		if (this.code === 'L') {
 			this.specialFlowerType = WHITE_LOTUS;
@@ -92,6 +113,10 @@ export class SkudPaiShoTile {
 		}
 	}
 
+	/**
+	 * Get text representation of this SkudPaiShoTile.
+	 * @returns {string}
+	 */
 	getConsoleDisplay() {
 		if (!this.drained) {
 			return this.ownerCode + "" + this.code;
@@ -100,10 +125,17 @@ export class SkudPaiShoTile {
 		}
 	}
 
+	/** @returns {string} */
 	getImageName() {
 		return this.ownerCode + "" + this.code;
 	}
 
+	/**
+	 * Checks if this SkudPaiShoTile forms harmony with otherTile.
+	 * @param {SkudPaiShoTile} otherTile - Other tile to check harmony with.
+	 * @param {boolean} surroundsLionTurtle - Is adjacent to Lion Turtle Accent Tile.
+	 * @returns {boolean}
+	 */
 	formsHarmonyWith(otherTile, surroundsLionTurtle) {
 		if (!(this.type === BASIC_FLOWER || this.code === 'L')
 			|| !(otherTile.type === BASIC_FLOWER || otherTile.code === 'L')) {
@@ -143,6 +175,11 @@ export class SkudPaiShoTile {
 		}
 	}
 
+	/**
+	 * Checks if this SkudPaiShoTile clashes with otherTile.
+	 * @param {SkudPaiShoTile} otherTile - Other tile to check clash with.
+	 * @returns {boolean}
+	 */
 	clashesWith(otherTile) {
 		if (newOrchidClashRule) {
 			if (this.ownerName !== otherTile.ownerName) {
@@ -157,6 +194,10 @@ export class SkudPaiShoTile {
 			&& this.basicValue === otherTile.basicValue);
 	}
 
+	/**
+	 * Returns number of spaces this SkudPaiShoTile can move.
+	 * @returns {number}
+	 */
 	getMoveDistance() {
 		if (this.type === BASIC_FLOWER) {
 			return parseInt(this.basicValue);
@@ -168,24 +209,39 @@ export class SkudPaiShoTile {
 		return 0;
 	}
 
+	/** Set this.drained to true if basic flower. */
 	drain() {
 		if (this.type === BASIC_FLOWER) {
 			this.drained = true;
 		}
 	}
-
+	
+	/** Set this.drained to false. */
 	restore() {
 		this.drained = false;
 	}
 
+	/**
+	 * Returns full word name of tile.
+	 * @returns {string}
+	 */
 	getName() {
 		return SkudPaiShoTile.getTileName(this.code);
 	}
 
+	/**
+	 * Get new deep copy of SkudPaiShoTile.
+	 * @returns {SkudPaiShoTile}
+	 */
 	getCopy() {
 		return new SkudPaiShoTile(this.code, this.ownerCode);
 	}
 
+	/**
+	 * Get full word tile name from tile code.
+	 * Example: R3 = Rose (Red 3)
+	 * @returns {string}
+	 */
 	static getTileName(tileCode) {
 		let name = "";
 
@@ -237,6 +293,11 @@ export class SkudPaiShoTile {
 		return name;
 	}
 
+	/**
+	 * Get tile code that clashes with given tile code.
+	 * Example: R3 = W3
+	 * @returns {string}
+	 */
 	static getClashTileCode(tileCode) {
 		if (tileCode.length === 2) {
 			if (tileCode.startsWith("R")) {
@@ -260,25 +321,3 @@ export class SkudPaiShoTile {
 // 	heading += " (";
 // 	if ()
 // };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

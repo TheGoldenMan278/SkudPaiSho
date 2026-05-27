@@ -50,10 +50,14 @@ import {
 	SkudPaiShoHarmonyManager
 } from './SkudPaiShoHarmony';
 import { SkudPaiShoTile } from './SkudPaiShoTile';
+import { SkudPaiShoTileManager } from './SkudPaiShoTileManager';
 import { paiShoBoardMaxRowOrCol } from '../pai-sho-common/PaiShoBoardHelp';
 import { showBadMoveModal } from '../ModalManager';
 
 export class SkudPaiShoBoard {
+	// =========================================================
+	// Constructor Functions
+	// =========================================================
 	constructor() {
 		this.size = new RowAndColumn(17, 17);
 		this.cells = this.brandNew();
@@ -65,6 +69,10 @@ export class SkudPaiShoBoard {
 		this.winners = [];
 	}
 
+	/**
+	 * Generates 2D array of SkudPaiShoBoardPoints to fill board
+	 * @returns {SkudPaiShoBoardPoint[][]} Cells (2D)
+	 */
 	brandNew() {
 		const cells = [];
 
@@ -378,6 +386,12 @@ export class SkudPaiShoBoard {
 		return cells;
 	}
 
+	/**
+	 * Fills in 1D array of SkudPaiShoBoardPoints with unplayable spots to create square 2D array
+	 * @param {number} numColumns - Number of columns playable columns in this row (allows creating circle shape)
+	 * @param {SkudPaiShoBoardPoint[]} points - 1D Array of playable SkudPaiShoBoardPoints
+	 * @returns {SkudPaiShoBoardPoint[]} Cells (1D)
+	 */
 	newRow(numColumns, points) {
 		const cells = [];
 
@@ -403,6 +417,18 @@ export class SkudPaiShoBoard {
 		return cells;
 	}
 
+	// =========================================================
+	// Tile Placement Functions
+	// =========================================================
+
+	/**
+	 * Main function to handle placing tile on board
+	 * @param {SkudPaiShoTile} tile - Tile to be placed
+	 * @param {NotationPoint} notationPoint - Contains row and column to place tile
+	 * @param {SkudPaiShoTileManager} tileManager
+	 * @param {NotationPoint} extraBoatPoint - Optional extra point where a boat moved a tile to
+	 * @returns {?Object<string, SkudPaiShoTile>} - Optional tile removed by boat
+	 */
 	placeTile(tile, notationPoint, tileManager, extraBoatPoint) {
 		let tileRemovedWithBoat;
 
@@ -439,6 +465,11 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * General function for placing all non-accent tiles
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for tile
+	 */
 	putTileOnPoint(tile, notationPoint) {
 		let point = notationPoint.rowAndColumn;
 		point = this.cells[point.row][point.col];
@@ -446,6 +477,11 @@ export class SkudPaiShoBoard {
 		point.putTile(tile);
 	}
 
+	/**
+	 * Check if rock can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for rock tile
+	 * @returns {boolean}
+	 */
 	canPlaceRock(boardPoint) {
 		if (boardPoint.hasTile()) {
 			// debug("Rock cannot be played on top of another tile");
@@ -457,6 +493,12 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Specific function for placing rock tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for rock tile
+	 * @returns {boolean}
+	 */
 	placeRock(tile, notationPoint) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -471,6 +513,11 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if wheel can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for wheel tile
+	 * @returns {boolean}
+	 */
 	canPlaceWheel(boardPoint) {
 		if (boardPoint.hasTile()) {
 			// debug("Wheel cannot be played on top of another tile");
@@ -547,10 +594,22 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Check if point is within bounds of board
+	 * @param {RowAndColumn} rowCol
+	 * @returns {boolean}
+	 */
 	isValidRowCol(rowCol) {
 		return rowCol.row >= 0 && rowCol.col >= 0 && rowCol.row <= 16 && rowCol.col <= 16;
 	}
 
+	/**
+	 * Specific function for placing wheel tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for wheel tile
+	 * @param {boolean} ignoreCheck - Ignore wheel placement rules
+	 * @returns {boolean}
+	 */
 	placeWheel(tile, notationPoint, ignoreCheck) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -585,6 +644,11 @@ export class SkudPaiShoBoard {
 		this.refreshRockRowAndCols();
 	}
 
+	/**
+	 * Check if knotweed can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for knotweed tile
+	 * @returns {boolean}
+	 */
 	canPlaceKnotweed(boardPoint) {
 		if (boardPoint.hasTile()) {
 			// debug("Knotweed cannot be played on top of another tile");
@@ -612,6 +676,12 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Specific function for placing knotweed tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for knotweed tile
+	 * @returns {boolean}
+	 */
 	placeKnotweed(tile, notationPoint) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -632,6 +702,12 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if boat can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for knotweed tile
+	 * @param {SkudPaiShoTile} tile - Tile that boat is played on top of
+	 * @returns {boolean}
+	 */
 	canPlaceBoat(boardPoint, tile) {
 		if (!boardPoint.hasTile()) {
 			// debug("Boat always played on top of another tile");
@@ -665,6 +741,14 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Specific function for placing boat tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for boat tile
+	 * @param {NotationPoint} extraBoatPoint - Optional extra point where boat is moving tile to
+	 * @param {boolean} ignoreCheck - Ignore boat placement rules
+	 * @returns {?SkudPaiShoTile} - Optional tile removed by boat
+	 */
 	placeBoat(tile, notationPoint, extraBoatPoint, ignoreCheck) {
 		// debug("extra boat point:");
 		// debug(extraBoatPoint);
@@ -715,6 +799,12 @@ export class SkudPaiShoBoard {
 		return tileRemovedWithBoat;
 	}
 
+	/**
+	 * Check if bamboo can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for bamboo tile
+	 * @param {SkudPaiShoTile} tile - Tile that boat is played on top of
+	 * @returns {boolean}
+	 */
 	canPlaceBamboo(boardPoint, tile) {
 		// if (!boardPoint.hasTile()) {
 		// 	// debug("Bamboo always played on top of another tile");
@@ -748,6 +838,14 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Specific function for placing bamboo tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for bamboo tile
+	 * @param {boolean} ignoreCheck - Ignore bamboo placement rules
+	 * @param {SkudPaiShoTileManager} tileManager
+	 * @returns {boolean}
+	 */
 	placeBamboo(tile, notationPoint, ignoreCheck, tileManager) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -799,10 +897,23 @@ export class SkudPaiShoBoard {
 		this.refreshRockRowAndCols();
 	}
 
+	/**
+	 * Check if pond can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for pond tile
+	 * @param {SkudPaiShoTile} tile - Tile that pond is played on top of (unused)
+	 * @returns {boolean}
+	 */
 	canPlacePond(boardPoint, tile) {
 		return !boardPoint.hasTile() && !boardPoint.isType(GATE);
 	}
 
+	/**
+	 * Specific function for placing pond tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for pond tile
+	 * @param {boolean} ignoreCheck - Ignore pond placement rules
+	 * @returns {boolean}
+	 */
 	placePond(tile, notationPoint, ignoreCheck) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -815,6 +926,12 @@ export class SkudPaiShoBoard {
 		boardPoint.putTile(tile);
 	}
 
+	/**
+	 * Check if lion turtle can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for lion turtle tile
+	 * @param {SkudPaiShoTile} tile - Tile that lion turtle is played on top of (unused)
+	 * @returns {boolean}
+	 */
 	canPlaceLionTurtle(boardPoint, tile) {
 		return !boardPoint.hasTile()
 			&& !boardPoint.isType(GATE);
@@ -830,6 +947,13 @@ export class SkudPaiShoBoard {
 	// 	return false;
 	// }
 
+	/**
+	 * Specific function for placing lion turtle tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for lion turtle tile
+	 * @param {boolean} ignoreCheck - Ignore lion turtle placement rules
+	 * @returns {boolean}
+	 */
 	placeLionTurtle(tile, notationPoint, ignoreCheck) {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -842,6 +966,16 @@ export class SkudPaiShoBoard {
 		boardPoint.putTile(tile);
 	}
 
+	// =========================================================
+	// Tile Placement Helper Functions
+	// =========================================================
+
+	/**
+	 * Gets clockwise movement position from placing boat tile
+	 * @param {RowAndColumn} center - Center point where wheel is placed
+	 * @param {RowAndColumn} rowCol - Starting position of tile to be moved
+	 * @returns {RowAndColumn} Ending position of tile to be moved
+	 */
 	getClockwiseRowCol(center, rowCol) {
 		if (rowCol.row < center.row && rowCol.col <= center.col) {
 			return new RowAndColumn(rowCol.row, rowCol.col + 1);
@@ -856,6 +990,11 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Gets array of positions adjacent to given rowAndCol, used for various accent tile abilities
+	 * @param {RowAndColumn} rowAndCol - Center point where accent tile is placed
+	 * @returns {RowAndColumn[]} Surrounding RowAndColumn positions
+	 */
 	getSurroundingRowAndCols(rowAndCol) {
 		const rowAndCols = [];
 		for (let row = rowAndCol.row - 1; row <= rowAndCol.row + 1; row++) {
@@ -872,6 +1011,7 @@ export class SkudPaiShoBoard {
 		return rowAndCols;
 	}
 
+	/** Refresh rows and columns where harmonies are blocked by rock tiles */
 	refreshRockRowAndCols() {
 		this.rockRowAndCols = [];
 		const self = this;
@@ -885,6 +1025,11 @@ export class SkudPaiShoBoard {
 		});
 	}
 
+	/**
+	 * Check if point is open gate where flower can be played
+	 * @param {NotationPoint} notationPoint
+	 * @returns {boolean}
+	 */
 	pointIsOpenGate(notationPoint) {
 		let point = notationPoint.rowAndColumn;
 		point = this.cells[point.row][point.col];
@@ -892,6 +1037,11 @@ export class SkudPaiShoBoard {
 		return point.isOpenGate() || this.pointIsOpenAndSurroundsPond(point);
 	}
 
+	/**
+	 * Check if point is open gate and adjacent to pond
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @returns {boolean}
+	 */
 	pointIsOpenAndSurroundsPond(boardPoint) {
 		if (boardPoint.hasTile()) {
 			return false;
@@ -906,6 +1056,17 @@ export class SkudPaiShoBoard {
 		return false;
 	}
 
+	// =========================================================
+	// Tile Movement Functions
+	// =========================================================
+
+	/**
+	 * Move tile from one spot to another, checking if move is allowed
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {NotationPoint} notationPointStart - Start point of moving tile
+	 * @param {NotationPoint} notationPointEnd - End point of moving tile
+	 * @returns {boolean | Object} False if move isn't allowed; if valid move, gives object with bonusAllowed, movedTile, capturedTile
+	 */
 	moveTile(player, notationPointStart, notationPointEnd) {
 		const startRowCol = notationPointStart.rowAndColumn;
 		const endRowCol = notationPointEnd.rowAndColumn;
@@ -956,6 +1117,7 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/** Refreshes if all SkudPaiShoBoardPoints are trapped by orchid or drained by knotweed */
 	flagAllTrappedAndDrainedTiles() {
 		// First, untrap
 		for (let row = 0; row < this.cells.length; row++) {
@@ -983,6 +1145,10 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Set all surrounding SkudPaiShoBoardPoints to drained if boardPoint contains knotweed
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 */
 	drainTilesSurroundingPointIfNeeded(boardPoint) {
 		if (!newKnotweedRules) {
 			return;
@@ -1005,6 +1171,10 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Set all surrounding SkudPaiShoBoardPoints to trapped if boardPoint contains orchid
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 */
 	trapTilesSurroundingPointIfNeeded(boardPoint) {
 		if (!boardPoint.hasTile()) {
 			return;
@@ -1028,6 +1198,11 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if white lotus tile can be captured
+	 * @param {SkudPaiShoTile} lotusTile
+	 * @returns {boolean}
+	 */
 	whiteLotusProtected(lotusTile) {
 		if (lotusNoCapture || simplest) {
 			return true;
@@ -1056,6 +1231,11 @@ export class SkudPaiShoBoard {
 		return isProtected;
 	}
 
+	/**
+	 * Check if orchid tile can capture (player has blooming white lotus)
+	 * @param {SkudPaiShoTile} orchidTile
+	 * @returns {boolean}
+	 */
 	orchidCanCapture(orchidTile) {
 		if (simpleSpecialFlowerRule || simplest) {
 			return false;	// Simplest? Never can capture.
@@ -1075,6 +1255,11 @@ export class SkudPaiShoBoard {
 		return orchidCanCapture;
 	}
 
+	/**
+	 * Check if orchid tile can be captured
+	 * @param {SkudPaiShoTile} orchidTile
+	 * @returns {boolean}
+	 */
 	orchidVulnerable(orchidTile) {
 		if (newOrchidVulnerableRule) {
 			let orchidVulnerable = false;
@@ -1121,6 +1306,12 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile in start point can capture tile in end point
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of capturing tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of tile to capture
+	 * @returns {boolean}
+	 */
 	canCapture(boardPointStart, boardPointEnd) {
 		if (gameOptionEnabled(EVERYTHING_CAPTURE)) {
 			return true;
@@ -1174,7 +1365,14 @@ export class SkudPaiShoBoard {
 		}
 	}
 
-	/* Does no verifying that tile can reach target point with standard movement */
+	/**
+	 * Check if tile in start point can teleport to end point
+	 * Does no verifying that tile can reach target point with standard movement
+	 * @param {string} player - Player can only move their own tiles
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @returns {boolean}
+	 */
 	couldMoveTileToPoint(player, boardPointStart, boardPointEnd) {
 		// start point must have a tile
 		if (!boardPointStart.hasTile()) {
@@ -1224,6 +1422,13 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Check if tile in start point can move to end point
+	 * @param {string} player - Player can only move their own tiles
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @returns {boolean}
+	 */
 	canMoveTileToPoint(player, boardPointStart, boardPointEnd) {
 		// start point must have a tile
 		if (!boardPointStart.hasTile()) {
@@ -1294,6 +1499,12 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Check if tile in start point can be moved to end point by boat
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @returns {boolean}
+	 */
 	canTransportTileToPointWithBoat(boardPointStart, boardPointEnd) {
 		// Transport Tile: used in Boat special ability
 
@@ -1336,6 +1547,13 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Check if tile moving from start to end point creates clash (invalid move)
+	 * Replaces tiles to original positions if move is invalid
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @returns {boolean}
+	 */
 	moveCreatesDisharmony(boardPointStart, boardPointEnd) {
 		// Grab tile in end point and put the start tile there, unless points are the same
 		let endTile;
@@ -1369,11 +1587,25 @@ export class SkudPaiShoBoard {
 		return clashFound;
 	}
 
+	/**
+	 * Recursive function to check valid arranging movement with "PathFound"
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @param {number} numMoves - Number of basic movement spaces
+	 * @returns {boolean}
+	 */
 	verifyAbleToReach(boardPointStart, boardPointEnd, numMoves) {
 		// Recursion!
 		return this.pathFound(boardPointStart, boardPointEnd, numMoves);
 	}
 
+	/**
+	 * Recursive function to check valid arranging movement
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @param {number} numMoves - Number of basic movement spaces remaining
+	 * @returns {boolean}
+	 */
 	pathFound(boardPointStart, boardPointEnd, numMoves) {
 		if (!boardPointStart || !boardPointEnd) {
 			return false;
@@ -1451,6 +1683,15 @@ export class SkudPaiShoBoard {
 		return false;
 	}
 
+	// =========================================================
+	// Harmony Functions
+	// =========================================================
+
+	/**
+	 * Check if row has harmnonies blocked by rock
+	 * @param {number} rowNum
+	 * @returns {boolean}
+	 */
 	rowBlockedByRock(rowNum) {
 		if (simpleRocks || simplest) {
 			return false;	// simpleRocks: Rocks don't disable Harmonies.
@@ -1465,6 +1706,11 @@ export class SkudPaiShoBoard {
 		return blocked;
 	}
 
+	/**
+	 * Check if column has harmnonies blocked by rock
+	 * @param {number} colNum
+	 * @returns {boolean}
+	 */
 	columnBlockedByRock(colNum) {
 		if (simpleRocks || simplest) {
 			return false;	// simpleRocks: Rocks don't disable Harmonies.
@@ -1479,6 +1725,7 @@ export class SkudPaiShoBoard {
 		return blocked;
 	}
 
+	/** Refreshes this.harmonyManager and checks for winner */
 	markSpacesBetweenHarmonies() {
 		// Unmark all
 		this.cells.forEach(function(row) {
@@ -1534,6 +1781,7 @@ export class SkudPaiShoBoard {
 		});
 	}
 
+	/** Refreshes this.betweenHarmonyHost/Guest for all SkudPaiShoBoardPoints */
 	analyzeHarmonies() {
 		// We're going to find all harmonies on the board
 
@@ -1592,6 +1840,11 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if point has any surrounding lion turtle tiles
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @returns {SkudPaiShoTile[]}
+	 */
 	getSurroundingLionTurtleTiles(boardPoint) {
 		const surroundingLionTurtleTiles = [];
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
@@ -1604,6 +1857,11 @@ export class SkudPaiShoBoard {
 		return surroundingLionTurtleTiles;
 	}
 
+	/**
+	 * Get any harmonies formed by tile in current point
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @returns {SkudPaiShoHarmony[]}
+	 */
 	getTileHarmonies(boardPoint) {
 		const tile = boardPoint.tile;
 		const rowAndCol = boardPoint;
@@ -1642,6 +1900,13 @@ export class SkudPaiShoBoard {
 		return tileHarmonies;
 	}
 
+	/**
+	 * Check if tile forms a harmony with any tile to the left
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
+	 * @returns {?SkudPaiShoHarmony}
+	 */
 	getHarmonyLeft(tile, endRowCol, surroundingLionTurtleTiles) {
 		let colToCheck = endRowCol.col - 1;
 
@@ -1664,6 +1929,13 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile forms a harmony with any tile to the right
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
+	 * @returns {?SkudPaiShoHarmony}
+	 */
 	getHarmonyRight(tile, endRowCol, surroundingLionTurtleTiles) {
 		let colToCheck = endRowCol.col + 1;
 
@@ -1686,6 +1958,13 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile forms a harmony with any tile up
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
+	 * @returns {?SkudPaiShoHarmony}
+	 */
 	getHarmonyUp(tile, endRowCol, surroundingLionTurtleTiles) {
 		let rowToCheck = endRowCol.row - 1;
 
@@ -1708,6 +1987,13 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile forms a harmony with any tile down
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
+	 * @returns {?SkudPaiShoHarmony}
+	 */
 	getHarmonyDown(tile, endRowCol, surroundingLionTurtleTiles) {
 		let rowToCheck = endRowCol.row + 1;
 
@@ -1730,6 +2016,14 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if any new harmonies are formed after move
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {SkudPaiShoTile} tile - Unused
+	 * @param {RowAndColumn} startRowCol - Unused
+	 * @param {RowAndColumn} endRowCol - Unused
+	 * @returns {boolean}
+	 */
 	hasNewHarmony(player, tile, startRowCol, endRowCol) {
 		// To check if new harmony, first analyze harmonies and compare to previous set of harmonies
 		const oldHarmonies = this.harmonyManager.harmonies;
@@ -1738,6 +2032,11 @@ export class SkudPaiShoBoard {
 		return this.harmonyManager.hasNewHarmony(player, oldHarmonies);
 	}
 
+	/**
+	 * Checks if any clashes are formed by tile in current point
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @returns {boolean}
+	 */
 	hasDisharmony(boardPoint) {
 		if (boardPoint.isType(GATE)) {
 			return false;	// Gate never has disharmony
@@ -1765,6 +2064,12 @@ export class SkudPaiShoBoard {
 		return clashFound;
 	}
 
+	/**
+	 * Check if tile clashes with any tile to the left
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @returns {boolean}
+	 */
 	hasDisharmonyLeft(tile, endRowCol) {
 		let colToCheck = endRowCol.col - 1;
 
@@ -1782,6 +2087,12 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile clashes with any tile to the right
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @returns {boolean}
+	 */
 	hasDisharmonyRight(tile, endRowCol) {
 		let colToCheck = endRowCol.col + 1;
 
@@ -1799,6 +2110,12 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile clashes with any tile up
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @returns {boolean}
+	 */
 	hasDisharmonyUp(tile, endRowCol) {
 		let rowToCheck = endRowCol.row - 1;
 
@@ -1816,6 +2133,12 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Check if tile clashes with any tile down
+	 * @param {SkudPaiShoTile} tile
+	 * @param {RowAndColumn} endRowCol - Position of tile
+	 * @returns {boolean}
+	 */
 	hasDisharmonyDown(tile, endRowCol) {
 		let rowToCheck = endRowCol.row + 1;
 
@@ -1833,6 +2156,18 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	// =========================================================
+	// Movement Functions
+	// =========================================================
+
+	/**
+	 * Get points adjacent to pointAlongTheWay that are movable from originPoint
+	 * @param {NotationPoint} pointAlongTheWay
+	 * @param {NotationPoint} originPoint
+	 * @param {boolean} mustPreserveDirection
+	 * @param {any} movementInfo - Unused
+	 * @returns {NotationPoint[]}
+	 */
 	getAdjacentPointsPotentialPossibleMoves(pointAlongTheWay, originPoint, mustPreserveDirection, movementInfo) {
 		const potentialMovePoints = [];
 
@@ -1875,6 +2210,14 @@ export class SkudPaiShoBoard {
 		return finalPoints;
 	}
 
+	/**
+	 * Get points diagonal to pointAlongTheWay that are movable from originPoint
+	 * @param {NotationPoint} pointAlongTheWay
+	 * @param {NotationPoint} originPoint
+	 * @param {boolean} mustPreserveDirection
+	 * @param {any} movementInfo - Unused
+	 * @returns {NotationPoint[]}
+	 */
 	getAdjacentDiagonalPointsPotentialPossibleMoves(pointAlongTheWay, originPoint, mustPreserveDirection, movementInfo) {
 		const diagonalPoints = [];
 
@@ -1924,31 +2267,71 @@ export class SkudPaiShoBoard {
 		return diagonalPoints;
 	}
 
+	/**
+	 * Check if targetPoint has tile that can by captured by tile on originPoint
+	 * @param {SkudPaiShoTile} tile - Unused
+	 * @param {any} movementInfo - Unused
+	 * @param {SkudPaiShoBoardPoint} originPoint
+	 * @param {SkudPaiShoBoardPoint} targetPoint
+	 * @param {boolean} isDeploy - Unused
+	 * @returns {boolean}
+	 */
 	targetPointHasTileThatCanBeCaptured(tile, movementInfo, originPoint, targetPoint, isDeploy) {
 		return targetPoint.hasTile()
 			&& this.canCapture(originPoint, targetPoint);
 	}
 
+	/**
+	 * Check if tile can capture tile on targetPoint
+	 * @param {SkudPaiShoTile} tile
+	 * @param {any} movementInfo - Unused
+	 * @param {SkudPaiShoBoardPoint} fromPoint - Unused
+	 * @param {SkudPaiShoBoardPoint} targetPoint
+	 * @returns {boolean}
+	 */
 	tileCanCapture(tile, movementInfo, fromPoint, targetPoint) {
 		return tile.canCapture(targetPoint.tile)
 			|| (tile.type === AdevarTileType.secondFace && targetPoint.tile.type === AdevarTileType.hiddenTile);	// Allow attempting to capture HT with any SFT
 	}
 
+	/**
+	 * Checks if tile can move through targetPoint
+	 * @param {SkudPaiShoTile} tile - Unused
+	 * @param {any} movementInfo - Unused
+	 * @param {SkudPaiShoBoardPoint} targetPoint
+	 * @param {SkudPaiShoBoardPoint} fromPoint - Unused
+	 * @returns {boolean}
+	 */
 	tileCanMoveThroughPoint(tile, movementInfo, targetPoint, fromPoint) {
 		// Can also check anything else that restricts tile movement through spaces on the board
 		return !targetPoint.hasTile();
 	}
 
+	/**
+	 * Check if boardPoint distance remaining is >= distanceRemaining
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @param {number} distanceRemaining
+	 * @param {any} movementInfo - Unused
+	 * @returns {boolean}
+	 */
 	canMoveHereMoreEfficientlyAlready(boardPoint, distanceRemaining, movementInfo) {
 		return boardPoint.getMoveDistanceRemaining(movementInfo) >= distanceRemaining;
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE type to eligible SkudPaiShoBoardPoints
+	 * @param {SkudPaiShoBoardPoint} boardPointStart
+	 */
 	setPossibleMovePoints(boardPointStart) {
 		if (boardPointStart.hasTile()) {
 			this.setPossibleMovesForMovement({ distance: boardPointStart.tile.getMoveDistance() }, boardPointStart);
 		}
 	}
 
+	/**
+	 * @param {any} movementInfo
+	 * @param {SkudPaiShoBoardPoint} boardPointStart
+	 */
 	setPossibleMovesForMovement(movementInfo, boardPointStart) {
 		if (gameOptionEnabled(DIAGONAL_MOVEMENT)) {
 			this.setPossibleMovementPointsFromMovePoints([boardPointStart], SkudPaiShoBoard.diagonalMovementFunction, boardPointStart.tile, movementInfo, boardPointStart, movementInfo.distance, 0);
@@ -1957,22 +2340,55 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * @param {SkudPaiShoBoard} board
+	 * @param {SkudPaiShoBoardPoint} originPoint
+	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
+	 * @param {any} movementInfo
+	 * @param {number} moveStepNumber - Unused
+	 * @returns {NotationPoint[]}
+	 */
 	static standardMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
 		const mustPreserveDirection = false;	// True means the tile couldn't turn as it goes
 		return board.getAdjacentPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
 	}
 
+	/**
+	 * @param {SkudPaiShoBoard} board
+	 * @param {SkudPaiShoBoardPoint} originPoint
+	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
+	 * @param {any} movementInfo
+	 * @param {number} moveStepNumber - Unused
+	 * @returns {NotationPoint[]}
+	 */
 	static diagonalMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
 		const mustPreserveDirection = false;
 		return board.getAdjacentDiagonalPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
 	}
 
+	/**
+	 * @param {SkudPaiShoBoard} board
+	 * @param {SkudPaiShoBoardPoint} originPoint
+	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
+	 * @param {any} movementInfo
+	 * @param {number} moveStepNumber - Unused
+	 * @returns {NotationPoint[]}
+	 */
 	static standardPlusDiagonalMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
 		const mustPreserveDirection = false;
 		const movePoints = board.getAdjacentPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
 		return movePoints.concat(board.getAdjacentDiagonalPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo));
 	}
 
+	/**
+	 * @param {NotationPoint[]} movePoints
+	 * @param {Function} nextPossibleMovementPointsFunction
+	 * @param {SkudPaiShoTile} tile
+	 * @param {any} movementInfo
+	 * @param {NotationPoint} originPoint
+	 * @param {number} distanceRemaining
+	 * @param {number} moveStepNumber
+	 */
 	setPossibleMovementPointsFromMovePoints(movePoints, nextPossibleMovementPointsFunction, tile, movementInfo, originPoint, distanceRemaining, moveStepNumber) {
 		if (distanceRemaining === 0
 			|| !movePoints
@@ -2018,11 +2434,26 @@ export class SkudPaiShoBoard {
 			moveStepNumber + 1);
 	}
 
+	/**
+	 * @param {NotationPoint} targetPoint
+	 * @param {SkudPaiShoTile} tileBeingMoved
+	 * @param {NotationPoint} originPoint
+	 * @param {any} currentMovementPath
+	 * @returns {boolean}
+	 */
 	setPointAsPossibleMovement(targetPoint, tileBeingMoved, originPoint, currentMovementPath) {
 		targetPoint.addType(POSSIBLE_MOVE);
 		return true;
 	}
 
+	/**
+	 * @param {SkudPaiShoTile} tile
+	 * @param {any} movementInfo
+	 * @param {NotationPoint} targetPoint
+	 * @param {NotationPoint} fromPoint
+	 * @param {NotationPoint} originPoint
+	 * @returns {boolean}
+	 */
 	tileCanMoveOntoPoint(tile, movementInfo, targetPoint, fromPoint, originPoint) {
 		return this.couldMoveTileToPoint(tile.ownerName, originPoint, targetPoint);
 	}
@@ -2042,6 +2473,7 @@ export class SkudPaiShoBoard {
 		}
 	}; */
 
+	/** Remove POSSIBLE_MOVE type from all SkudPaiShoBoardPoints */
 	removePossibleMovePoints() {
 		this.cells.forEach(function(row) {
 			row.forEach(function(boardPoint) {
@@ -2051,6 +2483,11 @@ export class SkudPaiShoBoard {
 		});
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE type to open gates
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {SkudPaiShoTile} tile - Optional address special rules for pond accent tile
+	 */
 	setOpenGatePossibleMoves(player, tile) {
 		// Apply "open gate" type to applicable boardPoints
 		for (let row = 0; row < this.cells.length; row++) {
@@ -2080,6 +2517,15 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	// =========================================================
+	// Misc Board Analysis Functions
+	// =========================================================
+
+	/**
+	 * Checks if player has growing flower in less than 2 gates
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {boolean} Count < 2
+	 */
 	playerControlsLessThanTwoGates(player) {
 		let count = 0;
 		for (let row = 0; row < this.cells.length; row++) {
@@ -2094,6 +2540,11 @@ export class SkudPaiShoBoard {
 		return count < 2;
 	}
 
+	/**
+	 * Checks if player has no growing flowers in gates
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {boolean}
+	 */
 	playerHasNoGrowingFlowers(player) {
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
@@ -2107,6 +2558,10 @@ export class SkudPaiShoBoard {
 		return true;
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE type to all open gate points
+	 * @param {string} player - "HOST" or "GUEST"
+	 */
 	revealSpecialFlowerPlacementPoints(player) {
 		// Check each Gate for tile belonging to player, then check gate edge points
 		const bpCheckList = [];
@@ -2148,6 +2603,9 @@ export class SkudPaiShoBoard {
 		});
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE type to gate nearest to guest if open
+	 */
 	setGuestGateOpen() {
 		const row = 16;
 		const col = 8;
@@ -2156,6 +2614,10 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Add POSSIBLE_MOVE type to all SkudPaiShoBoardPoints where given accent tile can be placed
+	 * @param {SkudPaiShoTile} tile - Accent tile to be placed
+	 */
 	revealPossiblePlacementPoints(tile) {
 		const self = this;
 
@@ -2182,6 +2644,10 @@ export class SkudPaiShoBoard {
 		});
 	}
 
+	/**
+	 * Given boardPoint where boat is placed, add POSSIBLE_MOVE type to all surrounding SkudPaiShoBoardPoints where the current tile can be shifted
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 */
 	revealBoatBonusPoints(boardPoint) {
 		if (!boardPoint.hasTile()) {
 			return;
@@ -2215,6 +2681,10 @@ export class SkudPaiShoBoard {
 		}
 	}
 
+	/**
+	 * Get new deep copy of SkudPaiShoBoard.
+	 * @returns {SkudPaiShoBoard}
+	 */
 	getCopy() {
 		const copyBoard = new SkudPaiShoBoard();
 
@@ -2237,6 +2707,11 @@ export class SkudPaiShoBoard {
 		return copyBoard;
 	}
 
+	/**
+	 * Number of basic flower tiles owned by player that are in their color's garden
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {number} Tile Count
+	 */
 	numTilesInGardensForPlayer(player) {
 		let count = 0;
 		for (let row = 0; row < this.cells.length; row++) {
@@ -2252,6 +2727,11 @@ export class SkudPaiShoBoard {
 		return count;
 	}
 
+	/**
+	 * Number of tiles of any type on the board owned by player
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {number} Tile Count
+	 */
 	numTilesOnBoardForPlayer(player) {
 		let count = 0;
 		for (let row = 0; row < this.cells.length; row++) {
@@ -2265,6 +2745,11 @@ export class SkudPaiShoBoard {
 		return count;
 	}
 
+	/**
+	 * Get measure of player's board control, the more tiles owned in each of the 4 quadrants, the higher the score
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @returns {number} Surroundness score (Higher is better for player)
+	 */
 	getSurroundness(player) {
 		let up = 0;
 		let hasUp = 0;
@@ -2315,6 +2800,5 @@ export class SkudPaiShoBoard {
 			return lowest * 4;
 		}
 	}
-
 
 }

@@ -20,7 +20,9 @@ import {
   SkudPaiShoNotationMove,
 } from '../skud-pai-sho/SkudPaiShoGameNotation';
 import { WAITING_FOR_ENDPOINT } from '../GameConstants';
+import { SkudPaiShoBoardPoint } from '../skud-pai-sho/SkudPaiShoBoardPoint';
 import { SkudPaiShoGameManager } from '../skud-pai-sho/SkudPaiShoGameManager';
+import { SkudPaiShoTile } from '../skud-pai-sho/SkudPaiShoTile';
 
 //
 // Contains helper functions to get all possible moves
@@ -33,10 +35,10 @@ export class SkudAiChessHelp {
 	// =========================================================
 
 	/**
-	 * Get list of all possible moves from current game state.
-	 * @param {SkudPaiShoGameManager} thisGame - Copy of game state.
-	 * @param {string} player - Either "HOST" or "GUEST".
-	 * @returns {[SkudPaiShoNotationMove]} List of all possible moves.
+	 * Get list of all possible moves from current game state
+	 * @param {SkudPaiShoGameManager} thisGame - Copy of game state
+	 * @param {string} player - Either "HOST" or "GUEST"
+	 * @returns {SkudPaiShoNotationMove[]} List of all possible moves
 	 */
 	getPossibleMoves = function(thisGame, player) {
 		var moves = [];
@@ -47,7 +49,12 @@ export class SkudAiChessHelp {
 		return moves;
 	};
 
-	// Add all plant moves to list of possible moves
+	/**
+	 * Add all plant moves to list of possible moves
+	 * @param {SkudPaiShoNotationMove[]} moves - List of possible moves
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {string} player - Either "HOST" or "GUEST"
+	 */
 	addPlantMoves = function(moves, game, player) {
 		if (!this.isOpenGate(game)) {
 			return;
@@ -94,7 +101,12 @@ export class SkudAiChessHelp {
 		}
 	};
 
-	// Add all arrange moves to list of possible moves
+	/**
+	 * Add all arrange moves to list of possible moves
+	 * @param {SkudPaiShoNotationMove[]} moves - List of possible moves
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {string} player - Either "HOST" or "GUEST"
+	 */
 	addArrangeMoves = function(moves, game, player) {
 		var startPoints = this.getStartPoints(game, player);
 
@@ -133,11 +145,11 @@ export class SkudAiChessHelp {
 	};
 
 	/**
-	 * Enhance moves with bonus actions when they create harmonies.
-	 * For each move that creates a harmony, we add variants with bonus plant/arrange moves.
-	 * @param {SkudPaiShoGameManager} game - Copy of game state.
-	 * @param {[SkudPaiShoNotationMove]} moves - Original move list.
-	 * @returns {[SkudPaiShoNotationMove]} New move list with harmony bonus moves added.
+	 * Enhance moves with bonus actions when they create harmonies
+	 * For each move that creates a harmony, we add variants with bonus plant/arrange moves
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {SkudPaiShoNotationMove[]} moves - Original move list
+	 * @returns {SkudPaiShoNotationMove[]} New move list with harmony bonus moves added
 	 */
 	enhanceMovesWithBonusActions = function(game, moves) {
 		var enhancedMoves = [];
@@ -170,8 +182,11 @@ export class SkudAiChessHelp {
 	};
 
 	/**
-	 * Generate bonus plant move variants for a given move.
-	 * Takes a move that creates harmony, and returns versions with bonus plants attached.
+	 * Generate bonus plant move variants for a given move
+	 * Takes a move that creates a harmony, and returns versions with bonus plants attached
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {SkudPaiShoNotationMove} baseMove - Move without any bonus actions
+	 * @returns {SkudPaiShoNotationMove[]} List of all bonus action variant moves
 	 */
 	generateBonusPlantVariants = function(game, baseMove) {
 		var variants = [];
@@ -217,8 +232,11 @@ export class SkudAiChessHelp {
 	};
 
 	/**
-	 * Generate bonus arrange move variants for a given move.
-	 * Takes a move that creates harmony, and returns versions with bonus arrangements attached.
+	 * Generate bonus arrange move variants for a given move
+	 * Takes a move that creates harmony, and returns versions with bonus arrangements attached
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {SkudPaiShoNotationMove} baseMove - Move without any bonus actions
+	 * @returns {SkudPaiShoNotationMove[]} List of all bonus action variant moves
 	 */
 	generateBonusArrangeVariants = function(game, baseMove) {
 		var variants = [];
@@ -255,13 +273,22 @@ export class SkudAiChessHelp {
 	// UTILITY FUNCTIONS
 	// =========================================================
 
-	// Get list of all tiles yet to be placed by the player
+	/**
+	 * Get list of all tiles yet to be placed by the player
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {string} player - Either "HOST" or "GUEST"
+	 * @returns {SkudPaiShoTile[]} tilePile
+	 */
 	getTilePile = function(game, player) {
 		var tilePile = (player === GUEST) ? game.tileManager.guestTiles : game.tileManager.hostTiles;
 		return tilePile;
 	};
 
-	// Check if there is at least one open gate
+	/**
+	 * Check if there is at least one open gate
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @returns {boolean}
+	 */
 	isOpenGate = function(game) {
 		var cells = game.board.cells;
 		for (var row = 0; row < cells.length; row++) {
@@ -273,7 +300,11 @@ export class SkudAiChessHelp {
 		}
 	};
 	
-	// Get list of all open points on the board where a piece could move
+	/**
+	 * Get list of all open points on the board with POSSIBLE_MOVE type
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @returns {SkudPaiShoBoardPoint[]}
+	 */
 	getPossibleMovePoints = function(game) {
 		var points = [];
 		for (var row = 0; row < game.board.cells.length; row++) {
@@ -286,12 +317,22 @@ export class SkudAiChessHelp {
 		return points;
 	};
 	
-	// Convert cell to RowAndColumn
+	/**
+	 * Convert boardPoint to RowAndColumn.notationPointString
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * @returns {string}
+	 */
 	getNotation = function(boardPoint) {
 		return new RowAndColumn(boardPoint.row, boardPoint.col).notationPointString;
 	};
 	
-	// Get list of all board points that have a piece owned by the player that is able to move (not accent tile, not drained or trapped)
+	/**
+	 * Get list of all board points that have a piece owned by the player that is able to move
+	 * Include: not accent tile, not drained or trapped
+	 * @param {SkudPaiShoGameManager} game - Copy of game state
+	 * @param {string} player - Either "HOST" or "GUEST"
+	 * @returns {SkudPaiShoBoardPoint[]}
+	 */
 	getStartPoints = function(game, player) {
 		var points = [];
 		for (var row = 0; row < game.board.cells.length; row++) {
@@ -309,7 +350,10 @@ export class SkudAiChessHelp {
 		return points;
 	};
  
-	// Get if opponent if "HOST" or "GUEST"
+	/**
+	 * Get if opponent is "HOST" or "GUEST"
+	 * @returns {string}
+	 */
 	getOpponent = function() {
 		return this.player === GUEST ? HOST : GUEST;
 	};
