@@ -138,7 +138,8 @@ SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
 
 	if (depth === 0) return this.evaluate(game);
 
-    const moves = this.helper.getPossibleMoves(game, this.player);
+	const player = isMaximizing ? this.player : this.helper.getOpponent();
+    const moves = this.helper.getPossibleMoves(game, player);
 
     if (isMaximizing) {
         let maxEval = -Infinity;
