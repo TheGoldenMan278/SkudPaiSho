@@ -77,27 +77,28 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	// console.log("Chess AI V1", this.player)
 	this.moveNum = moveNum;
 	this.startTime = performance.now();
-
+	
 	// Move 0: Strategic accent tile selection
 	if (moveNum === 0) return this.selectAccentTiles(game);
-
+	
 	var moves = this.helper.getPossibleMoves(game, this.player);
 	if (moves.length === 0) return null;
-
+	
 	// Enhance moves with harmony bonus actions where applicable
 	moves = this.helper.enhanceMovesWithBonusActions(game, moves);
-
+	
 	// Score all moves and find the best
 	var bestMove = null;
 	var bestScore = -Infinity;
-
+	
+	let copyGame = game.getCopy();
 	try {
 		for (var i = 0; i < moves.length; i++) {
 			var move = moves[i];
-			let copyGame = game.getCopy();
-			copyGame.runNotationMove(move);
+			let moveResults = copyGame.runNotationMove(move);
 	
-			var score = this.minimax(copyGame, 2);
+			var score = this.minimax(copyGame, 2, -Infinity, Infinity, false);
+			copyGame.undoNotationMove(move, moveResults);
 	
 			// Immediate win detection
 			if (score >= 999999999) return move;
@@ -129,10 +130,12 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
  * Recursive function to look at future moves to determine which move is best.
  * @param {SkudPaiShoGameManager} game - Copy of game state.
  * @param {number} depth - Number of moves into the future to look.
+ * @param {number} alpha - Minimum score that the maximizing player is assured of
+ * @param {number} beta - Maximum score that the minimizing player is assured of
  * @param {boolean} isMaximizing - Do we want to maximize or minimize score (Is it our turn or opponent's turn).
  * @returns {number} Max/Min score found in search.
  */
-SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
+SkudChessAI.prototype.minimax = function(game, depth, alpha, beta, isMaximizing) {
 	// Abort if we have passed thinking time limit
     if (performance.now() - this.startTime > this.timeLimit) throw new Error("TIMEOUT");
 
@@ -146,9 +149,13 @@ SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
         for (let move of moves) {
             let moveResults = game.runNotationMove(move);
 
-            let score = this.minimax(game, depth - 1, false);
-            maxEval = Math.max(maxEval, score);
+            let score = this.minimax(game, depth - 1, alpha, beta, false);
 			game.undoNotationMove(move, moveResults);
+
+            maxEval = Math.max(maxEval, score);
+            alpha = Math.max(alpha, score);
+
+            if (beta <= alpha) break; // Prune
         }
         return maxEval;
     } else {
@@ -156,9 +163,13 @@ SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
         for (let move of moves) {
             let moveResults = game.runNotationMove(move);
 
-            let score = this.minimax(game, depth - 1, true);
-            minEval = Math.min(minEval, score);
+            let score = this.minimax(game, depth - 1, alpha, beta, true);
 			game.undoNotationMove(move, moveResults);
+
+            minEval = Math.min(minEval, score);
+            beta = Math.min(beta, score);
+
+            if (beta <= alpha) break; // PRUNE
         }
         return minEval;
     }
