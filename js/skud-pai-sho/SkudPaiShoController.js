@@ -618,7 +618,7 @@ export class SkudPaiShoController {
 
 				const move = this.gameNotation.getNotationMoveFromBuilder(this.notationBuilder);
 				this.theGame.hidePossibleMovePoints(false, move);
-				const bonusAllowed = this.theGame.runNotationMove(move);
+				const bonusAllowed = this.theGame.runNotationMove(move).bonusAllowed;
 
 				if (!gameOptionEnabled(OPTION_INFORMAL_START) && this.gameNotation.moves.length === 2) {
 					// Host auto-copies Guest's first Plant

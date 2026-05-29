@@ -202,6 +202,20 @@ export class SkudPaiShoTileManager {
 	}
 
 	/**
+	 * Replace a tile with given tileCode into given player's tileset.
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {string} tileCode
+	 */
+	replaceTile(player, tileCode) {
+		let replacedTile = new SkudPaiShoTile(tileCode, player[0])
+		if (player === HOST) {
+			this.hostTiles.push(replacedTile);
+		} else if (player === GUEST) {
+			this.guestTiles.push(replacedTile);
+		}
+	}
+
+	/**
 	 * Gets number of accent tiles each player starts with for the current rule set.
 	 * @returns {number}
 	 */

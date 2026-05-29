@@ -73,18 +73,30 @@ export class SkudPaiShoGameManager {
 		setGameLogText(this.gameLogText);
 	}
 
+	// =========================================================
+	// Movement Functions
+	// =========================================================
+
+	/**
+	 * @typedef {Object} MoveResults
+	 * @property {boolean} bonusAllowed
+	 * @property {SkudPaiShoTile} movedTile
+	 * @property {SkudPaiShoTile} capturedTile
+	 */
+
 	/**
 	 * Execute SkudPaiShoNotationMove
 	 * @param {SkudPaiShoNotationMove} move
 	 * @param {boolean} withActuate - Reflect move in visuals
 	 * @param {number} moveAnimationBeginStep - Optional animation step
-	 * @returns {boolean | Object} False if move isn't allowed; if valid move, gives object with bonusAllowed, movedTile, capturedTile
+	 * @returns {boolean | MoveResults} False if move isn't allowed; if valid move, gives object with bonusAllowed, movedTile, capturedTile
 	 */
 	runNotationMove(move, withActuate, moveAnimationBeginStep) {
 		debug("Running Move(" + (withActuate ? "" : "Not ") + "Actuated): " + move.fullMoveText);
 
 		let errorFound = false;
-		let bonusAllowed = false;
+		/** @type {MoveResults} */
+		let moveResults = null;
 
 		if (move.moveNum === 0 && move.accentTiles) {
 			const self = this;
@@ -107,7 +119,7 @@ export class SkudPaiShoGameManager {
 		}
 
 		if (move.moveType === PLANTING) {
-			// // Check if valid plant
+			// Check if valid plant
 			if (!this.board.pointIsOpenGate(move.endPoint)) {
 				// invalid
 				debug("Invalid planting point: " + move.endPoint.pointText);
@@ -121,8 +133,7 @@ export class SkudPaiShoGameManager {
 
 			this.buildPlantingGameLogText(move, tile);
 		} else if (move.moveType === ARRANGING) {
-			const moveResults = this.board.moveTile(move.player, move.startPoint, move.endPoint);
-			bonusAllowed = moveResults.bonusAllowed;
+			moveResults = this.board.moveTile(move.player, move.startPoint, move.endPoint);
 
 			move.capturedTile = moveResults.capturedTile;
 
@@ -185,7 +196,56 @@ export class SkudPaiShoGameManager {
 		this.lastPlayerName = move.player;
 		this.lastMoveNum = move.moveNum;
 
-		return bonusAllowed;
+		return moveResults;
+	}
+
+	/**
+	 * Undo SkudPaiShoNotationMove (ignores visuals)
+	 * @param {SkudPaiShoNotationMove} move - Move to undo
+	 * @param {MoveResults} moveResults - Allows undoing capture
+	 */
+	undoNotationMove(move, moveResults) {
+		debug("Undoing Move: " + move.fullMoveText);
+		// TODO: Add in checking for errors
+		let errorFound = false;
+
+		if (move.moveNum === 0 && move.accentTiles) {
+			const self = this;
+			const allAccentCodes = ['R', 'W', 'K', 'B', 'R', 'W', 'K', 'B', 'M', 'P', 'T'];
+			move.accentTiles.forEach(function(tileCode) {
+				const i = allAccentCodes.indexOf(tileCode);
+				if (i >= 0) {
+					allAccentCodes.splice(i, 1);
+				}
+			});
+			allAccentCodes.forEach(function(tileCode) {
+				self.tileManager.replaceTile(move.player, tileCode);
+			});
+		}
+
+		if (move.moveType === PLANTING) {
+			this.board.undoPlaceTile(move.endPoint, this.tileManager)
+		} else if (move.moveType === ARRANGING) {
+			// If SPECIAL_FLOWERS_BOUNCE rule, need to remove tile that was bounced back to opponent's tile pile
+			if (gameOptionEnabled(SPECIAL_FLOWERS_BOUNCE)
+				&& move.capturedTile && move.capturedTile.type === SPECIAL_FLOWER) {
+				this.tileManager.grabTile(move.capturedTile.ownerName, move.capturedTile.code);
+			}
+
+			if (moveResults.bonusAllowed && move.hasHarmonyBonus()) {
+				this.board.undoPlaceTile(move.bonusEndPoint, this.tileManager, move.boatBonusPoint, move.tileRemovedWithBoat);
+			}
+
+			this.board.moveTile(move.player, move.endPoint, move.startPoint, true);
+			// Replace captured tile if it exists
+			if (moveResults.capturedTile instanceof SkudPaiShoTile) {
+				this.board.cells[move.endPoint.rowAndColumn.row][move.endPoint.rowAndColumn.col].putTile(moveResults.capturedTile);
+			}
+		}
+
+		this.endGameWinners = [];
+		this.lastPlayerName = this.getNextPlayerName();
+		this.lastMoveNum = move.moveNum - 1;
 	}
 
 	/**
@@ -344,6 +404,10 @@ export class SkudPaiShoGameManager {
 		return this.tileManager.playerHasBothSpecialTilesRemaining(playerName);
 	}
 
+	// =========================================================
+	// Winner Detection Functions
+	// =========================================================
+
 	/**
 	 * Checks for winner(s).
 	 * @returns {?string} "HOST", "GUEST", "BOTH PLAYERS", or null if no winners
@@ -389,6 +453,10 @@ export class SkudPaiShoGameManager {
 			return 4;	// Tie
 		}
 	}
+
+	// =========================================================
+	// Util Functions
+	// =========================================================
 
 	/**
 	 * Get new deep copy of SkudPaiShoGameManager

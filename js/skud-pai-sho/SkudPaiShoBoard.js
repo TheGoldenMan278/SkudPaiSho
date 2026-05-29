@@ -595,15 +595,6 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if point is within bounds of board
-	 * @param {RowAndColumn} rowCol
-	 * @returns {boolean}
-	 */
-	isValidRowCol(rowCol) {
-		return rowCol.row >= 0 && rowCol.col >= 0 && rowCol.row <= 16 && rowCol.col <= 16;
-	}
-
-	/**
 	 * Specific function for placing wheel tile
 	 * @param {SkudPaiShoTile} tile
 	 * @param {NotationPoint} notationPoint - Target point for wheel tile
@@ -967,11 +958,164 @@ export class SkudPaiShoBoard {
 	}
 
 	// =========================================================
+	// Tile Placement Undo Functions
+	// =========================================================
+
+	/**
+	 * Main function to handle undo placing tile on board
+	 * @param {NotationPoint} endpoint - Contains row and column where tile was originally placed
+	 * @param {SkudPaiShoTileManager} tileManager
+	 * @param {NotationPoint} extraBoatPoint - Optional extra point where a boat moved a tile to
+	 * @returns {?Object<string, SkudPaiShoTile>} - Optional tile removed by boat
+	 */
+	undoPlaceTile(endPoint, tileManager, extraBoatPoint, tileRemovedWithBoat) {
+		const tile = this.cells[endPoint.rowAndColumn.row][endPoint.rowAndColumn.col].removeTile();
+		// If undoing boat, may not have tile in endpoint if used to remove accent tile
+		if (tile !== null) {
+			tileManager.putTileBack(tile);
+		}
+
+		if (tile.type === ACCENT_TILE) {
+			if (tile.accentType === ROCK) {
+				this.undoPlaceRock(tile, notationPoint);
+			} else if (tile.accentType === WHEEL) {
+				this.undoPlaceWheel(tile, notationPoint);
+			} else if (tile.accentType === KNOTWEED) {
+				this.undoPlaceKnotweed(tile, notationPoint);
+			} else if (tile.accentType === BOAT) {
+				this.undoPlaceBoat(tile, notationPoint, extraBoatPoint, tileRemovedWithBoat);
+			// TODO: Add undo functions for other accent tiles if we want AI to work on expansion
+			} else if (tile.accentType === BAMBOO) {
+				debug("AI undo moves currently doesn't work with expansion using Bamboo")
+			} else if (tile.accentType === POND) {
+				debug("AI undo moves currently doesn't work with expansion using Pond")
+			} else if (tile.accentType === LION_TURTLE) {
+				debug("AI undo moves currently doesn't work with expansion using Lion Turtle")
+			}
+		} else if (tile.specialFlowerType === WHITE_LOTUS) {
+			const rowColIdx = this.playedWhiteLotusTiles.findIndex(lotusTile => lotusTile.id === tile.id)
+			if (rowColIdx === -1) {
+				console.error("Tried to undo lotus tile that didn't exist:", tile)
+			} else {
+				this.playedWhiteLotusTiles.splice(rowColIdx, 1);
+			}
+		}
+		// Things to do after a tile is undone
+		this.flagAllTrappedAndDrainedTiles();
+		this.analyzeHarmonies();
+	}
+
+	/**
+	 * Specific function for undoing placing rock tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for rock tile
+	 */
+	undoPlaceRock(tile, notationPoint) {
+		const rowAndCol = notationPoint.rowAndColumn;
+
+		const rowColIdx = this.rockRowAndCols.findIndex(rockRowCol => (rockRowCol.row === rowAndCol.row && rockRowCol.col === rowAndCol.col))
+		if (rowColIdx === -1) {
+			console.error("Tried to undo rock that didn't exist at:", notationPoint.pointText)
+		} else {
+			this.rockRowAndCols.splice(rowColIdx, 1);
+		}
+	}
+
+	/**
+	 * Specific function for undoing placing wheel tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for wheel tile
+	 */
+	undoPlaceWheel(tile, notationPoint) {
+		const rowAndCol = notationPoint.rowAndColumn;
+		const rowCols = this.getSurroundingRowAndCols(rowAndCol); // Get surrounding RowAndColumn values
+
+		// Perform rotation: Get results, then place all tiles as needed
+		const results = [];
+		for (let i = 0; i < rowCols.length; i++) {
+			// Save tile and target rowAndCol
+			const tile = this.cells[rowCols[i].row][rowCols[i].col].removeTile();
+			const targetRowCol = this.getCounterclockwiseRowCol(rowAndCol, rowCols[i]);
+			if (this.isValidRowCol(targetRowCol)) {
+				results.push([tile, targetRowCol]);
+			}
+		}
+
+		// Go through and place tiles in target points
+		const self = this;
+		results.forEach(function(result) {
+			const bp = self.cells[result[1].row][result[1].col];
+			bp.putTile(result[0]);
+		});
+
+		this.refreshRockRowAndCols();
+	}
+
+	/**
+	 * Specific function for undoing placing knotweed tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for knotweed tile
+	 */
+	undoPlaceKnotweed(tile, notationPoint) {
+		const rowAndCol = notationPoint.rowAndColumn;
+		const rowCols = this.getSurroundingRowAndCols(rowAndCol);
+
+		// Undo "Drain" on surrounding tiles
+		for (let i = 0; i < rowCols.length; i++) {
+			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+			bp.restoreTile();
+		}
+	}
+
+	/**
+	 * Specific function for undoing placing boat tile
+	 * @param {SkudPaiShoTile} tile
+	 * @param {NotationPoint} notationPoint - Target point for boat tile
+	 * @param {NotationPoint} extraBoatPoint - Optional extra point where a boat moved a tile to
+	 * @param {SkudPaiShoTile} tileRemovedWithBoat - Optional tile removed by boat
+	 */
+	undoPlaceBoat(tile, notationPoint, extraBoatPoint, tileRemovedWithBoat) {
+		// debug("Extra boat point:", extraBoatPoint);
+		const rowAndCol = notationPoint.rowAndColumn;
+		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
+
+		// Must have either used boat to move tile or remove accent tile
+		if (extraBoatPoint instanceof NotationPoint) {
+			const bpRowCol = extraBoatPoint.rowAndColumn;
+			const shiftedBoardPoint = this.cells[bpRowCol.row][bpRowCol.col];
+
+			boardPoint.putTile(shiftedBoardPoint.removeTile());
+		} else if (tileRemovedWithBoat instanceof SkudPaiShoTile) {
+			boardPoint.putTile(tileRemovedWithBoat);
+
+			const rowCols = this.getSurroundingRowAndCols(rowAndCol);
+			// "Restore" surrounding tiles
+			for (let i = 0; i < rowCols.length; i++) {
+				const bp = this.cells[rowCols[i].row][rowCols[i].col];
+				bp.restoreTile();
+			}
+
+			if (rocksUnwheelable) {
+				this.refreshRockRowAndCols();
+			}
+		}
+	}
+
+	// =========================================================
 	// Tile Placement Helper Functions
 	// =========================================================
 
 	/**
-	 * Gets clockwise movement position from placing boat tile
+	 * Check if point is within bounds of board
+	 * @param {RowAndColumn} rowCol
+	 * @returns {boolean}
+	 */
+	isValidRowCol(rowCol) {
+		return rowCol.row >= 0 && rowCol.col >= 0 && rowCol.row <= 16 && rowCol.col <= 16;
+	}
+
+	/**
+	 * Gets clockwise movement position from placing wheel tile
 	 * @param {RowAndColumn} center - Center point where wheel is placed
 	 * @param {RowAndColumn} rowCol - Starting position of tile to be moved
 	 * @returns {RowAndColumn} Ending position of tile to be moved
@@ -987,6 +1131,26 @@ export class SkudPaiShoBoard {
 			return new RowAndColumn(rowCol.row - 1, rowCol.col);
 		} else {
 			debug("ERROR CLOCKWISE CALCULATING");
+		}
+	}
+
+	/**
+	 * Gets counterclockwise movement position for undoing wheel tile
+	 * @param {RowAndColumn} center - Center point where wheel is placed
+	 * @param {RowAndColumn} rowCol - Starting position of tile to be moved
+	 * @returns {RowAndColumn} Ending position of tile to be moved
+	 */
+	getCounterclockwiseRowCol(center, rowCol) {
+		if (rowCol.row < center.row && rowCol.col >= center.col) {
+			return new RowAndColumn(rowCol.row, rowCol.col - 1);
+		} else if (rowCol.col > center.col && rowCol.row >= center.row) {
+			return new RowAndColumn(rowCol.row - 1, rowCol.col);
+		} else if (rowCol.row > center.row && rowCol.col <= center.col) {
+			return new RowAndColumn(rowCol.row, rowCol.col + 1);
+		} else if (rowCol.col < center.col && rowCol.row <= center.row) {
+			return new RowAndColumn(rowCol.row + 1, rowCol.col);
+		} else {
+			debug("ERROR COUNTERCLOCKWISE CALCULATING");
 		}
 	}
 
@@ -1065,9 +1229,10 @@ export class SkudPaiShoBoard {
 	 * @param {string} player - "HOST" or "GUEST"
 	 * @param {NotationPoint} notationPointStart - Start point of moving tile
 	 * @param {NotationPoint} notationPointEnd - End point of moving tile
+	 * @param {boolean} doIgnoreMoveRules - Used for undoing moves to allow moving back into gate
 	 * @returns {boolean | Object} False if move isn't allowed; if valid move, gives object with bonusAllowed, movedTile, capturedTile
 	 */
-	moveTile(player, notationPointStart, notationPointEnd) {
+	moveTile(player, notationPointStart, notationPointEnd, doIgnoreMoveRules = false) {
 		const startRowCol = notationPointStart.rowAndColumn;
 		const endRowCol = notationPointEnd.rowAndColumn;
 
@@ -1080,7 +1245,8 @@ export class SkudPaiShoBoard {
 		const boardPointEnd = this.cells[endRowCol.row][endRowCol.col];
 
 		if (!this.canMoveTileToPoint(player, boardPointStart, boardPointEnd)
-			&& !gameOptionEnabled(DIAGONAL_MOVEMENT)) {
+			&& !gameOptionEnabled(DIAGONAL_MOVEMENT)
+			&& !doIgnoreMoveRules) {
 			debug("Bad move bears");
 			showBadMoveModal();
 			return false;

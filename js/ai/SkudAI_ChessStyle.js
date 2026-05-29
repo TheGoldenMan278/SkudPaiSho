@@ -36,7 +36,7 @@ export function SkudChessAI() {
 	this.moveNum = 0;
 	this.helper = new SkudAiChessHelp();
 	this.startTime = performance.now();
-	this.timeLimit = 10000; // ms
+	this.timeLimit = 100000; // ms
 }
 
 // =========================================================
@@ -143,21 +143,21 @@ SkudChessAI.prototype.minimax = function(game, depth, isMaximizing) {
     if (isMaximizing) {
         let maxEval = -Infinity;
         for (let move of moves) {
-            let copy = game.getCopy();
-            copy.runNotationMove(move);
+            let moveResults = game.runNotationMove(move);
 
-            let score = this.minimax(copy, depth - 1, false);
+            let score = this.minimax(game, depth - 1, false);
             maxEval = Math.max(maxEval, score);
+			game.undoNotationMove(move, moveResults);
         }
         return maxEval;
     } else {
         let minEval = Infinity;
         for (let move of moves) {
-            let copy = game.getCopy();
-            copy.runNotationMove(move);
+            let moveResults = game.runNotationMove(move);
 
-            let score = this.minimax(copy, depth - 1, true);
+            let score = this.minimax(game, depth - 1, true);
             minEval = Math.min(minEval, score);
+			game.undoNotationMove(move, moveResults);
         }
         return minEval;
     }
