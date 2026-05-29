@@ -12,6 +12,24 @@ import { SkudPaiShoTile } from './SkudPaiShoTile';
 import { debug } from '../GameData';
 import { sameStart, simpleCanonRules } from './SkudPaiShoRules';
 
+/**
+ * Represents a single player's move in Skud Pai Sho
+ * @class
+ * @property {string} fullMoveText - Full text representation of move
+ * @property {boolean} valid - True if SkudPaiShoNotationMove was constructed with valid notation
+ * @property {number} moveNum - How many moves since the start of the game
+ * @property {string} playerCode - "H" or "G"
+ * @property {string} player - "HOST" or "GUEST"
+ * @property {string} moveTextOnly - fullMoveText - moveNum & playerCode prefix
+ * @property {string[]} accentTiles - List of letters representing accent tiles selected before first move
+ * @property {string} moveType - "PLANTING" or "ARRANGING"
+ * @property {string} plantedFlowerType - Only set on "PLANTING" moves
+ * @property {NotationPoint} startPoint - Start point for "ARRANGING" move
+ * @property {NotationPoint} endPoint - End point for "PLANTING" or "ARRANGING" move
+ * @property {string} bonusTileCode - Chosen bonus tile if bonus was earned from "ARRANGING" move
+ * @property {NotationPoint} bonusEndPoint - End point for bonus tile if bonus was earned from "ARRANGING" move
+ * @property {NotationPoint} boatBonusPoint - Move point if bonus was earned and used to play a boat and shift a tile
+ */
 export class SkudPaiShoNotationMove {
 	constructor(text) {
 	this.fullMoveText = text;
