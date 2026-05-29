@@ -86,7 +86,12 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	
 	// Enhance moves with harmony bonus actions where applicable
 	moves = this.helper.enhanceMovesWithBonusActions(game, moves);
-	
+
+	// Initial ordering to improve alpha beta pruning
+    moves.sort((a, b) => {
+        return this.quickEvaluateMove(game, b) - this.quickEvaluateMove(game, a);
+    });
+
 	// Score all moves and find the best
 	var bestMove = null;
 	var bestScore = -Infinity;
@@ -178,6 +183,22 @@ SkudChessAI.prototype.minimax = function(game, depth, alpha, beta, isMaximizing)
 // =========================================================
 // Evaluation Functions
 // =========================================================
+
+/**
+ * Quick analysis for initial move ordering, based on major move components
+ * @param {SkudPaiShoGameManager} game - Game state to be analyzed
+ * @param {SkudPaiShoNotationMove} move - Move to be analyzed
+ * @returns {number} Score.
+ */
+SkudChessAI.prototype.quickEvaluateMove = function(game, move) {
+    let score = 0;
+
+    if (move.capturedTile) score += 50;
+    if (move.hasHarmonyBonus && move.hasHarmonyBonus()) score += 100;
+    if (move.moveType === PLANTING) score += 5;
+
+    return score;
+};
 
 /**
  * Select accent tiles strategically instead of randomly.
