@@ -36,7 +36,7 @@ export function SkudChessAI() {
 	this.moveNum = 0;
 	this.helper = new SkudAiChessHelp();
 	this.startTime = performance.now();
-	this.timeLimit = 100000; // ms
+	this.timeLimit = 10000; // ms
 }
 
 // =========================================================
@@ -77,11 +77,12 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	// console.log("Chess AI V1", this.player)
 	this.moveNum = moveNum;
 	this.startTime = performance.now();
+	let perfMsg = "";
 	
 	// Move 0: Strategic accent tile selection
 	if (moveNum === 0) return this.selectAccentTiles(game);
 	
-	var moves = this.helper.getPossibleMoves(game, this.player);
+	let moves = this.helper.getPossibleMoves(game, this.player);
 	if (moves.length === 0) return null;
 	
 	// Enhance moves with harmony bonus actions where applicable
@@ -93,36 +94,44 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
     });
 
 	// Score all moves and find the best
-	var bestMove = null;
-	var bestScore = -Infinity;
+	let bestMove = moves[0];
 	
 	let copyGame = game.getCopy();
 	try {
-		for (var i = 0; i < moves.length; i++) {
-			var move = moves[i];
-			let moveResults = copyGame.runNotationMove(move);
-	
-			var score = this.minimax(copyGame, 2, -Infinity, Infinity, false);
-			copyGame.undoNotationMove(move, moveResults);
-	
-			// Immediate win detection
-			if (score >= 999999999) return move;
-	
-			// Add small random factor to break ties and add variety
-			score += Math.random() * 2;
-	
-			if (score > bestScore) {
-				bestScore = score;
-				bestMove = move;
+		for (let depth = 1; depth <= 10; depth++) {
+			let bestScore = -Infinity;
+            let currentBest = bestMove;
+
+			for (let move of moves) {
+				let moveResults = copyGame.runNotationMove(move);
+		
+				var score = this.minimax(copyGame, depth - 1, -Infinity, Infinity, false);
+				copyGame.undoNotationMove(move, moveResults);
+		
+				// Immediate win detection
+				if (score >= 999999999) return move;
+		
+				if (score > bestScore) {
+					bestScore = score;
+					currentBest = move;
+				}
 			}
+
+			bestMove = currentBest;
+
+			// Reorder to search best move first on next iteration
+            moves.sort((a, b) => {
+                if (a === bestMove) return -1;
+                if (b === bestMove) return 1;
+                return 0;
+            });
+			perfMsg = `${perfMsg}Depth of ${depth} finished in ${performance.now() - this.startTime}ms, best score of ${bestScore}.\n`;
 		}
-		console.log("AI thinking time:", performance.now() - this.startTime)
-		return bestMove;
 	} catch (e) {
-        console.warn("AI failed or timed out, using fallback move:", e);
+        console.warn(perfMsg);
     }
 
-	// Use the best move from the latest depth before timeout, fallback to random move if none was found to avoid game greeze
+	// Use the best move from the latest depth before timeout, fallback to random move if none was found to avoid game freeze
 	if (!bestMove) return moves[Math.floor(Math.random() * moves.length)];
 	return bestMove;
 };
