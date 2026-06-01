@@ -244,7 +244,6 @@ export class SkudPaiShoGameManager {
 		}
 
 		this.endGameWinners = [];
-		this.lastPlayerName = this.getNextPlayerName();
 		this.lastMoveNum = move.moveNum - 1;
 	}
 
@@ -497,6 +496,10 @@ export class SkudPaiShoGameManager {
 			host: this.tileManager.hostTiles.map(t => t.code).sort(),
 			guest: this.tileManager.guestTiles.map(t => t.code).sort()
     	}));
+
+		// Important game state
+		parts.push(this.lastPlayerName);
+		parts.push(this.lastMoveNum);
 
 		return parts.join("|");
 	}
