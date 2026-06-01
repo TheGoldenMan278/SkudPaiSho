@@ -105,7 +105,7 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 			for (let move of moves) {
 				let moveResults = copyGame.runNotationMove(move);
 		
-				var score = this.minimax(copyGame, depth - 1, -Infinity, Infinity, false);
+				let score = -this.negamax(copyGame, depth - 1, -Infinity, Infinity, -1);
 				copyGame.undoNotationMove(move, moveResults);
 		
 				// Immediate win detection
@@ -146,47 +146,34 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
  * @param {number} depth - Number of moves into the future to look.
  * @param {number} alpha - Minimum score that the maximizing player is assured of
  * @param {number} beta - Maximum score that the minimizing player is assured of
- * @param {boolean} isMaximizing - Do we want to maximize or minimize score (Is it our turn or opponent's turn).
- * @returns {number} Max/Min score found in search.
+ * @param {boolean} color - AI's player = 1, opponent player = -1 to negate score (good for opponent is bad for AI)
+ * @returns {number} Max score found in search.
  */
-SkudChessAI.prototype.minimax = function(game, depth, alpha, beta, isMaximizing) {
+SkudChessAI.prototype.negamax = function(game, depth, alpha, beta, color) {
 	// Abort if we have passed thinking time limit
     if (performance.now() - this.startTime > this.timeLimit) throw new Error("TIMEOUT");
 
-	if (depth === 0) return this.evaluate(game);
+	if (depth === 0) return color * this.evaluate(game);
 
-	const player = isMaximizing ? this.player : this.helper.getOpponent();
-    const moves = this.helper.getPossibleMoves(game, player);
+	const player = (color === 1) ? this.player : this.helper.getOpponent();
 
-    if (isMaximizing) {
-        let maxEval = -Infinity;
-        for (let move of moves) {
-            let moveResults = game.runNotationMove(move);
+    let moves = this.helper.getPossibleMoves(game, player);
+    // moves = this.helper.enhanceMovesWithBonusActions(game, moves);
 
-            let score = this.minimax(game, depth - 1, alpha, beta, false);
-			game.undoNotationMove(move, moveResults);
+	let maxEval = -Infinity;
+	for (let move of moves) {
+		let moveResults = game.runNotationMove(move);
 
-            maxEval = Math.max(maxEval, score);
-            alpha = Math.max(alpha, score);
+		// Alpha and Beta switch places and signs when switching between the players' perspectives
+		let score = -this.negamax(game, depth - 1, -beta, -alpha, -color);
+		game.undoNotationMove(move, moveResults);
 
-            if (beta <= alpha) break; // Prune
-        }
-        return maxEval;
-    } else {
-        let minEval = Infinity;
-        for (let move of moves) {
-            let moveResults = game.runNotationMove(move);
+		maxEval = Math.max(maxEval, score);
+		alpha = Math.max(alpha, score);
 
-            let score = this.minimax(game, depth - 1, alpha, beta, true);
-			game.undoNotationMove(move, moveResults);
-
-            minEval = Math.min(minEval, score);
-            beta = Math.min(beta, score);
-
-            if (beta <= alpha) break; // PRUNE
-        }
-        return minEval;
-    }
+		if (beta <= alpha) break; // Prune
+	}
+	return maxEval;
 };
 
 // =========================================================
