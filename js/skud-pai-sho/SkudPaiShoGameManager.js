@@ -472,6 +472,36 @@ export class SkudPaiShoGameManager {
 	}
 
 	/**
+	 * Returns string representation of game state for equality comparison with another SkudPaiShoGameManager instance
+	 * @returns {string}
+	 */
+	getStateHash() {
+		let parts = [];
+
+		// Board state
+		for (let r = 0; r < this.board.cells.length; r++) {
+			for (let c = 0; c < this.board.cells[r].length; c++) {
+				const cell = this.board.cells[r][c];
+				if (cell.tile) {
+					parts.push(
+						cell.tile.ownerName +
+						cell.tile.code +
+						r + "," + c
+					);
+				}
+			}
+		}
+
+		// Tile manager (remaining tiles)
+		parts.push(JSON.stringify({
+			host: this.tileManager.hostTiles.map(t => t.code).sort(),
+			guest: this.tileManager.guestTiles.map(t => t.code).sort()
+    	}));
+
+		return parts.join("|");
+	}
+
+	/**
 	 * Get player for next turn based on this.lastPlayerName
 	 * @returns {string} player
 	 */

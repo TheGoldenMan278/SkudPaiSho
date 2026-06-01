@@ -162,11 +162,16 @@ SkudChessAI.prototype.negamax = function(game, depth, alpha, beta, color) {
 
 	let maxEval = -Infinity;
 	for (let move of moves) {
+		let origGame = game.getStateHash();
 		let moveResults = game.runNotationMove(move);
 
 		// Alpha and Beta switch places and signs when switching between the players' perspectives
 		let score = -this.negamax(game, depth - 1, -beta, -alpha, -color);
 		game.undoNotationMove(move, moveResults);
+		if (game.getStateHash() !== origGame) {
+			console.error("Game undoNotationMove error found:", move.fullMoveText)
+			console.error(game.getStateHash(), origGame)
+		}
 
 		maxEval = Math.max(maxEval, score);
 		alpha = Math.max(alpha, score);
