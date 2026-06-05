@@ -37,6 +37,23 @@ export function SkudChessAI() {
 	this.helper = new SkudAiChessHelp();
 	this.startTime = performance.now();
 	this.timeLimit = 10000; // ms
+	/** @type {Map} Transposition Table */
+	this.tt = new Map();
+	/** Stats used for performance debugging */
+	this.stats = {
+		nodes: 0,
+		cutoffs: 0,
+		ttHits: 0,
+
+		moveGenTime: 0,
+		moveGenCalls: 0,
+		applyTime: 0,
+		applyCalls: 0,
+		undoTime: 0,
+		undoCalls: 0,
+		evalTime: 0,
+		evalCalls: 0
+	};
 }
 
 // =========================================================
@@ -75,9 +92,24 @@ SkudChessAI.prototype.setPlayer = function(playerName) {
  */
 SkudChessAI.prototype.getMove = function(game, moveNum) {
 	// console.log("Chess AI V1", this.player)
+	this.stats = {
+		nodes: 0,
+		cutoffs: 0,
+		ttHits: 0,
+
+		moveGenTime: 0,
+		moveGenCalls: 0,
+		applyTime: 0,
+		applyCalls: 0,
+		undoTime: 0,
+		undoCalls: 0,
+		evalTime: 0,
+		evalCalls: 0
+	};
+	let perfMsg = "";
+
 	this.moveNum = moveNum;
 	this.startTime = performance.now();
-	let perfMsg = "";
 	
 	// Move 0: Strategic accent tile selection
 	if (moveNum === 0) return this.selectAccentTiles(game);
@@ -125,11 +157,16 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
                 if (b === bestMove) return 1;
                 return 0;
             });
-			perfMsg = `${perfMsg}Depth of ${depth} finished in ${performance.now() - this.startTime}ms, best score of ${bestScore}.\n`;
+			perfMsg = `${perfMsg}Depth of ${depth} finished in ${performance.now() - this.startTime}ms, best score of ${bestScore}. TT Hits: ${this.stats.ttHits}\n`;
 		}
 	} catch (e) {
-        console.warn(perfMsg);
-    }
+		// Still need to allow other errors through for debugging rather than eating them
+		if (e.message !== "TIMEOUT") throw e;
+ 	}
+
+	// Built up print message containing performance info
+	perfMsg = `${perfMsg} Nodes: ${this.stats.nodes} Cutoffs: ${this.stats.cutoffs}\n Avg Move Gen Time: ${this.stats.moveGenTime/this.stats.moveGenCalls} Avg Apply Time: ${this.stats.applyTime/this.stats.applyCalls} Avg Undo Time: ${this.stats.undoTime/this.stats.undoCalls} Avg Eval Time: ${this.stats.evalTime/this.stats.evalCalls}`
+	console.warn(perfMsg);
 
 	// Use the best move from the latest depth before timeout, fallback to random move if none was found to avoid game freeze
 	if (!bestMove) return moves[Math.floor(Math.random() * moves.length)];
@@ -153,26 +190,54 @@ SkudChessAI.prototype.negamax = function(game, depth, alpha, beta, color) {
 	// Abort if we have passed thinking time limit
     if (performance.now() - this.startTime > this.timeLimit) throw new Error("TIMEOUT");
 
-	if (depth === 0) return color * this.evaluate(game);
+	this.stats.nodes++;
+
+	// Reached leaf of search tree, now fully evaluate position
+	if (depth === 0) {
+		this.stats.evalCalls++;
+		const evalScore = this.timed(() => this.evaluate(game), "evalTime");
+		return color * evalScore;
+	}
+	
+	// Lookup game state in transposition table
+	const key = game.fastHash() + "|" + depth + "|" + color;
+    const entry = this.tt.get(key);
+    if (entry && entry.depth >= depth) {
+		this.stats.ttHits++;
+        return entry.value;
+    }
 
 	const player = (color === 1) ? this.player : this.helper.getOpponent();
 
-    let moves = this.helper.getPossibleMoves(game, player);
+	this.stats.moveGenCalls++;
+    let moves = this.timed(() => this.helper.getPossibleMoves(game, player), "moveGenTime");
     // moves = this.helper.enhanceMovesWithBonusActions(game, moves);
 
 	let maxEval = -Infinity;
 	for (let move of moves) {
-		let moveResults = game.runNotationMove(move);
+		this.stats.applyCalls++;
+		let moveResults = this.timed(() => game.runNotationMove(move), "applyTime");
 
 		// Alpha and Beta switch places and signs when switching between the players' perspectives
 		let score = -this.negamax(game, depth - 1, -beta, -alpha, -color);
-		game.undoNotationMove(move, moveResults);
+		this.stats.undoCalls++;
+		this.timed(() => game.undoNotationMove(move, moveResults), "undoTime");
 
 		maxEval = Math.max(maxEval, score);
 		alpha = Math.max(alpha, score);
 
-		if (beta <= alpha) break; // Prune
+		if (beta <= alpha) { // Prune
+			this.stats.cutoffs++;
+			break;
+		}
 	}
+
+	// Add position to transposition table
+    this.tt.set(key, {
+        value: maxEval,
+        depth: depth
+    });
+
 	return maxEval;
 };
 
@@ -401,3 +466,19 @@ SkudChessAI.prototype.countBasicFlowers = function(tilePile) {
 	return count;
 };
 
+// =========================================================
+// Debug Functions
+// =========================================================
+
+/**
+ * Time how long it takes a function to run, add time to total under this.stats.key
+ * @param {function} fn - Function to be timed
+ * @param {string} key - Key in this.stats to add to time total
+ * @returns {any} Return result of fn
+ */
+SkudChessAI.prototype.timed = function(fn, key) {
+	const start = performance.now();
+	const result = fn();
+	this.stats[key] += performance.now() - start;
+	return result;
+};

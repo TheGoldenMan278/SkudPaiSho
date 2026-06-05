@@ -498,11 +498,31 @@ export class SkudPaiShoGameManager {
     	}));
 
 		// Important game state
-		parts.push(this.lastPlayerName);
-		parts.push(this.lastMoveNum);
+		// parts.push(this.lastPlayerName);
+		// parts.push(this.lastMoveNum);
 
 		return parts.join("|");
 	}
+
+	/**
+	 * Fast version of getting hash to represent game state, used for transposition table keys
+	 * @returns {string}
+	 */
+	fastHash = function() {
+		let hash = "";
+
+		for (let row of this.board.cells) {
+			for (let cell of row) {
+				if (cell.tile) {
+					hash += cell.tile.ownerName + cell.tile.code + "|";
+				} else {
+					hash += ".|";
+				}
+			}
+		}
+
+		return hash;
+	};
 
 	/**
 	 * Get player for next turn based on this.lastPlayerName
