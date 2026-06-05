@@ -28,13 +28,12 @@ import {
 } from '../skud-pai-sho/SkudPaiShoGameNotation';
 import { WAITING_FOR_ENDPOINT } from '../GameConstants';
 import { SkudPaiShoGameManager } from '../skud-pai-sho/SkudPaiShoGameManager';
-import { SkudAiChessHelp } from './SkudAI_ChessHelp';
+import * as AiHelper from './SkudAI_ChessHelp';
 
 // Constructor
 export function SkudChessAI() {
 	this.player = null;
 	this.moveNum = 0;
-	this.helper = new SkudAiChessHelp();
 	this.startTime = performance.now();
 	this.timeLimit = 10000; // ms
 	/** @type {Map} Transposition Table */
@@ -44,6 +43,7 @@ export function SkudChessAI() {
 		nodes: 0,
 		cutoffs: 0,
 		ttHits: 0,
+		movesGenerated: 0,
 
 		moveGenTime: 0,
 		moveGenCalls: 0,
@@ -96,6 +96,7 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 		nodes: 0,
 		cutoffs: 0,
 		ttHits: 0,
+		movesGenerated: 0,
 
 		moveGenTime: 0,
 		moveGenCalls: 0,
@@ -114,11 +115,11 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	// Move 0: Strategic accent tile selection
 	if (moveNum === 0) return this.selectAccentTiles(game);
 	
-	let moves = this.helper.getPossibleMoves(game, this.player);
+	let moves = AiHelper.getPossibleMoves(game, this.player, this.moveNum);
 	if (moves.length === 0) return null;
 	
 	// Enhance moves with harmony bonus actions where applicable
-	moves = this.helper.enhanceMovesWithBonusActions(game, moves);
+	moves = AiHelper.enhanceMovesWithBonusActions(game, moves, this.player, this.moveNum);
 
 	// Initial ordering to improve alpha beta pruning
     moves.sort((a, b) => {
@@ -165,7 +166,9 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
  	}
 
 	// Built up print message containing performance info
-	perfMsg = `${perfMsg} Nodes: ${this.stats.nodes} Cutoffs: ${this.stats.cutoffs}\n Avg Move Gen Time: ${this.stats.moveGenTime/this.stats.moveGenCalls} Avg Apply Time: ${this.stats.applyTime/this.stats.applyCalls} Avg Undo Time: ${this.stats.undoTime/this.stats.undoCalls} Avg Eval Time: ${this.stats.evalTime/this.stats.evalCalls}`
+	perfMsg = `${perfMsg} Nodes: ${this.stats.nodes} Cutoffs: ${this.stats.cutoffs}\n`;
+	perfMsg = `${perfMsg} Avg Move Gen Time: ${(this.stats.moveGenTime/this.stats.moveGenCalls).toFixed(2)} Avg Apply Time: ${(this.stats.applyTime/this.stats.applyCalls).toFixed(2)} Avg Undo Time: ${(this.stats.undoTime/this.stats.undoCalls).toFixed(2)} Avg Eval Time: ${(this.stats.evalTime/this.stats.evalCalls).toFixed(2)}\n`;
+	perfMsg = `${perfMsg} Avg Branching Factor: ${(this.stats.movesGenerated / this.stats.nodes).toFixed(3)}`;
 	console.warn(perfMsg);
 
 	// Use the best move from the latest depth before timeout, fallback to random move if none was found to avoid game freeze
@@ -207,11 +210,12 @@ SkudChessAI.prototype.negamax = function(game, depth, alpha, beta, color) {
         return entry.value;
     }
 
-	const player = (color === 1) ? this.player : this.helper.getOpponent();
+	const player = (color === 1) ? this.player : AiHelper.getOpponent(this.player);
 
 	this.stats.moveGenCalls++;
-    let moves = this.timed(() => this.helper.getPossibleMoves(game, player), "moveGenTime");
-    // moves = this.helper.enhanceMovesWithBonusActions(game, moves);
+    let moves = this.timed(() => AiHelper.getPossibleMoves(game, player, this.moveNum), "moveGenTime");
+    // moves = AiHelper.enhanceMovesWithBonusActions(game, moves, player, this.moveNum);
+	this.stats.movesGenerated += moves.length;
 
 	let maxEval = -Infinity;
 	for (let move of moves) {
@@ -277,7 +281,7 @@ SkudChessAI.prototype.selectAccentTiles = function(game) {
  */
 SkudChessAI.prototype.evaluate = function(game) {
 	var score = 0;
-	var opponent = this.helper.getOpponent();
+	var opponent = AiHelper.getOpponent(this.player);
 
 	// === IMMEDIATE WIN/LOSS DETECTION ===
 
@@ -337,7 +341,7 @@ SkudChessAI.prototype.evaluate = function(game) {
 	// === ENDGAME AWARENESS ===
 
 	// Check if approaching endgame (few tiles left)
-	var ourTilePile = this.helper.getTilePile(game, this.player);
+	var ourTilePile = AiHelper.getTilePile(game, this.player);
 	var basicFlowersLeft = this.countBasicFlowers(ourTilePile);
 
 	// In endgame, harmonies crossing center matter most
