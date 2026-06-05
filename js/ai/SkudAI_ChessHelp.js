@@ -36,7 +36,7 @@ import { SkudPaiShoTile } from '../skud-pai-sho/SkudPaiShoTile';
  * @returns {SkudPaiShoNotationMove[]} List of all possible moves
  */
 export function getPossibleMoves(game, player, moveNum) {
-	var moves = [];
+	let moves = [];
 
 	addPlantMoves(moves, game, player, moveNum);
 	addArrangeMoves(moves, game, player, moveNum);
@@ -56,40 +56,36 @@ export function addPlantMoves(moves, game, player, moveNum) {
 		return;
 	}
 
-	var tilePile = getTilePile(game, player);
+	const tilePile = getTilePile(game, player);
+	let moveSet = new Set();
 
 	// For each tile in player's tile reserve ("tile pile"), build Planting moves
-	for (var i = 0; i < tilePile.length; i++) {
-		var tile = tilePile[i];
+	for (let i = 0; i < tilePile.length; i++) {
+		const tile = tilePile[i];
 		if (tile.type === BASIC_FLOWER) {
 			// For each basic flower
 			// Get possible plant points
-			var convertedMoveNum = moveNum * 2;
+			const convertedMoveNum = moveNum * 2;
 			game.revealOpenGates(player, tile, convertedMoveNum, true);
-			var endPoints = getPossibleMovePoints(game);
+			const endPoints = getPossibleMovePoints(game);
 
-			for (var j = 0; j < endPoints.length; j++) {
-				var notationBuilder = new SkudPaiShoNotationBuilder();
+			for (let j = 0; j < endPoints.length; j++) {
+				let notationBuilder = new SkudPaiShoNotationBuilder();
 				notationBuilder.moveType = PLANTING;
 
 				notationBuilder.plantedFlowerType = tile.code;
 				notationBuilder.status = WAITING_FOR_ENDPOINT;
 
-				var endPoint = endPoints[j];
+				const endPoint = endPoints[j];
 
 				notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
-				var move = notationBuilder.getNotationMove(moveNum, player);
+				let move = notationBuilder.getNotationMove(moveNum, player);
 
 				game.hidePossibleMovePoints(true);
 
-				var isDuplicate = false;
-				for (var x = 0; x < moves.length; x++) {
-					if (moves[x].equals(move)) {
-						isDuplicate = true;
-					}
-				}
-
-				if (!isDuplicate) {
+				const moveKey = move.fullMoveText;
+				if (!moveSet.has(moveKey)) {
+					moveSet.add(moveKey);
 					moves.push(move);
 				}
 			}
@@ -105,36 +101,32 @@ export function addPlantMoves(moves, game, player, moveNum) {
  * @param {number} moveNum
  */
 export function addArrangeMoves(moves, game, player, moveNum) {
-	var startPoints = getStartPoints(game, player);
+	const startPoints = getStartPoints(game, player);
+	let moveSet = new Set();
 
-	for (var i = 0; i < startPoints.length; i++) {
-		var startPoint = startPoints[i];
+	for (let i = 0; i < startPoints.length; i++) {
+		const startPoint = startPoints[i];
 
 		game.revealPossibleMovePoints(startPoint, true);
 
-		var endPoints = getPossibleMovePoints(game);
+		const endPoints = getPossibleMovePoints(game);
 
-		for (var j = 0; j < endPoints.length; j++) {
-			var notationBuilder = new SkudPaiShoNotationBuilder();
+		for (let j = 0; j < endPoints.length; j++) {
+			let notationBuilder = new SkudPaiShoNotationBuilder();
 			notationBuilder.status = WAITING_FOR_ENDPOINT;
 			notationBuilder.moveType = ARRANGING;
 			notationBuilder.startPoint = new NotationPoint(getNotation(startPoint));
 
-			var endPoint = endPoints[j];
+			const endPoint = endPoints[j];
 
 			notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
-			var move = notationBuilder.getNotationMove(moveNum, player);
+			let move = notationBuilder.getNotationMove(moveNum, player);
 
 			game.hidePossibleMovePoints(true);
 
-			var isDuplicate = false;
-			for (var x = 0; x < moves.length; x++) {
-				if (moves[x].equals(move)) {
-					isDuplicate = true;
-				}
-			}
-
-			if (!isDuplicate) {
+			const moveKey = move.fullMoveText;
+			if (!moveSet.has(moveKey)) {
+				moveSet.add(moveKey);
 				moves.push(move);
 			}
 		}
@@ -151,28 +143,28 @@ export function addArrangeMoves(moves, game, player, moveNum) {
  * @returns {SkudPaiShoNotationMove[]} New move list with harmony bonus moves added
  */
 export function enhanceMovesWithBonusActions(game, moves, player, moveNum) {
-	var enhancedMoves = [];
-	var opponent = getOpponent(player);
+	let enhancedMoves = [];
+	const opponent = getOpponent(player);
 
-	for (var i = 0; i < moves.length; i++) {
-		var move = moves[i];
+	for (let i = 0; i < moves.length; i++) {
+		let move = moves[i];
 		enhancedMoves.push(move); // Always include the basic move
 
 		// Check if this move creates a harmony
-		var copyGame = game.getCopy();
+		let copyGame = game.getCopy();
 		copyGame.runNotationMove(move);
 
-		var harmonyBefore = game.board.harmonyManager.numHarmoniesForPlayer(player);
-		var harmonyAfter = copyGame.board.harmonyManager.numHarmoniesForPlayer(player);
+		const harmonyBefore = game.board.harmonyManager.numHarmoniesForPlayer(player);
+		const harmonyAfter = copyGame.board.harmonyManager.numHarmoniesForPlayer(player);
 
 		// If move creates a harmony, add bonus action variants
 		if (harmonyAfter > harmonyBefore) {
 			// Add variants with bonus plant moves
-			var plantBonusVariants = generateBonusPlantVariants(copyGame, move, moveNum);
+			let plantBonusVariants = generateBonusPlantVariants(copyGame, move, moveNum);
 			enhancedMoves = enhancedMoves.concat(plantBonusVariants);
 
 			// Add variants with bonus arrange moves
-			var arrangeBonusVariants = generateBonusArrangeVariants(copyGame, move);
+			let arrangeBonusVariants = generateBonusArrangeVariants(copyGame, move);
 			enhancedMoves = enhancedMoves.concat(arrangeBonusVariants);
 		}
 	}
@@ -190,12 +182,12 @@ export function enhanceMovesWithBonusActions(game, moves, player, moveNum) {
  * @returns {SkudPaiShoNotationMove[]} List of all bonus action variant moves
  */
 export function generateBonusPlantVariants(game, baseMove, player, moveNum) {
-	var variants = [];
-	var tilePile = getTilePile(game, player);
-	var plantableFlowers = [];
+	let variants = [];
+	const tilePile = getTilePile(game, player);
+	let plantableFlowers = [];
 
 	// Collect available basic flowers to plant
-	for (var i = 0; i < tilePile.length; i++) {
+	for (let i = 0; i < tilePile.length; i++) {
 		if (tilePile[i].type === BASIC_FLOWER) {
 			plantableFlowers.push(tilePile[i]);
 		}
@@ -206,14 +198,14 @@ export function generateBonusPlantVariants(game, baseMove, player, moveNum) {
 	}
 
 	// For each plantable flower, generate placement variants
-	for (var f = 0; f < plantableFlowers.length; f++) {
-		var flower = plantableFlowers[f];
+	for (let f = 0; f < plantableFlowers.length; f++) {
+		const flower = plantableFlowers[f];
 		game.revealOpenGates(player, flower, moveNum * 2, true);
-		var endPoints = getPossibleMovePoints(game);
+		const endPoints = getPossibleMovePoints(game);
 
-		for (var j = 0; j < endPoints.length; j++) {
-			var endPoint = endPoints[j];
-			var variant = baseMove.clone ? baseMove.clone() : JSON.parse(JSON.stringify(baseMove));
+		for (let j = 0; j < endPoints.length; j++) {
+			const endPoint = endPoints[j];
+			let variant = baseMove.clone ? baseMove.clone() : JSON.parse(JSON.stringify(baseMove));
 			
 			// Add bonus plant information
 			variant.bonusTileCode = flower.code;
@@ -241,18 +233,18 @@ export function generateBonusPlantVariants(game, baseMove, player, moveNum) {
  * @returns {SkudPaiShoNotationMove[]} List of all bonus action variant moves
  */
 export function generateBonusArrangeVariants(game, baseMove, player) {
-	var variants = [];
-	var startPoints = getStartPoints(game, player);
+	let variants = [];
+	const startPoints = getStartPoints(game, player);
 
 	// For each tile we can move, generate movement variants
-	for (var i = 0; i < startPoints.length && variants.length < 6; i++) {
-		var startPoint = startPoints[i];
+	for (let i = 0; i < startPoints.length && variants.length < 6; i++) {
+		const startPoint = startPoints[i];
 		game.revealPossibleMovePoints(startPoint, true);
-		var endPoints = getPossibleMovePoints(game);
+		const endPoints = getPossibleMovePoints(game);
 
-		for (var j = 0; j < endPoints.length; j++) {
-			var endPoint = endPoints[j];
-			var variant = baseMove.clone ? baseMove.clone() : JSON.parse(JSON.stringify(baseMove));
+		for (let j = 0; j < endPoints.length; j++) {
+			const endPoint = endPoints[j];
+			let variant = baseMove.clone ? baseMove.clone() : JSON.parse(JSON.stringify(baseMove));
 			
 			// Add bonus arrange information
 			variant.bonusStartPoint = getNotation(startPoint);
@@ -282,7 +274,7 @@ export function generateBonusArrangeVariants(game, baseMove, player) {
  * @returns {SkudPaiShoTile[]} tilePile
  */
 export function getTilePile(game, player) {
-	var tilePile = (player === GUEST) ? game.tileManager.guestTiles : game.tileManager.hostTiles;
+	const tilePile = (player === GUEST) ? game.tileManager.guestTiles : game.tileManager.hostTiles;
 	return tilePile;
 };
 
@@ -292,9 +284,9 @@ export function getTilePile(game, player) {
  * @returns {boolean}
  */
 export function isOpenGate(game) {
-	var cells = game.board.cells;
-	for (var row = 0; row < cells.length; row++) {
-		for (var col = 0; col < cells[row].length; col++) {
+	const cells = game.board.cells;
+	for (let row = 0; row < cells.length; row++) {
+		for (let col = 0; col < cells[row].length; col++) {
 			if (cells[row][col].isOpenGate()) {
 				return true;
 			}
@@ -308,9 +300,9 @@ export function isOpenGate(game) {
  * @returns {SkudPaiShoBoardPoint[]}
  */
 export function getPossibleMovePoints(game) {
-	var points = [];
-	for (var row = 0; row < game.board.cells.length; row++) {
-		for (var col = 0; col < game.board.cells[row].length; col++) {
+	let points = [];
+	for (let row = 0; row < game.board.cells.length; row++) {
+		for (let col = 0; col < game.board.cells[row].length; col++) {
 			if (game.board.cells[row][col].isType(POSSIBLE_MOVE)) {
 				points.push(game.board.cells[row][col]);
 			}
@@ -336,10 +328,10 @@ export function getNotation(boardPoint) {
  * @returns {SkudPaiShoBoardPoint[]}
  */
 export function getStartPoints(game, player) {
-	var points = [];
-	for (var row = 0; row < game.board.cells.length; row++) {
-		for (var col = 0; col < game.board.cells[row].length; col++) {
-			var startPoint = game.board.cells[row][col];
+	let points = [];
+	for (let row = 0; row < game.board.cells.length; row++) {
+		for (let col = 0; col < game.board.cells[row].length; col++) {
+			const startPoint = game.board.cells[row][col];
 			if (startPoint.hasTile()
 				&& startPoint.tile.ownerName === player
 				&& startPoint.tile.type !== ACCENT_TILE
