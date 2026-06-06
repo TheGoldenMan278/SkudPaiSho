@@ -119,7 +119,7 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 	if (moves.length === 0) return null;
 	
 	// Enhance moves with harmony bonus actions where applicable
-	moves = AiHelper.enhanceMovesWithBonusActions(game, moves, this.player, this.moveNum);
+	// moves = AiHelper.enhanceMovesWithBonusActions(game, moves, this.player, this.moveNum);
 
 	// Initial ordering to improve alpha beta pruning
     moves.sort((a, b) => {
@@ -162,7 +162,10 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
 		}
 	} catch (e) {
 		// Still need to allow other errors through for debugging rather than eating them
-		if (e.message !== "TIMEOUT") throw e;
+		if (e.message !== "TIMEOUT") {
+			console.error(e);
+			throw e;
+		}
  	}
 
 	// Built up print message containing performance info
