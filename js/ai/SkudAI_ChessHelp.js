@@ -57,38 +57,34 @@ export function addPlantMoves(moves, game, player, moveNum) {
 	}
 
 	const tilePile = getTilePile(game, player);
+	let plantTypesAnalyzed = new Set();
 	let moveSet = new Set();
 
 	// For each tile in player's tile reserve ("tile pile"), build Planting moves
-	for (let i = 0; i < tilePile.length; i++) {
-		const tile = tilePile[i];
-		if (tile.type === BASIC_FLOWER) {
-			// For each basic flower
-			// Get possible plant points
-			const convertedMoveNum = moveNum * 2;
-			game.revealOpenGates(player, tile, convertedMoveNum, true);
-			const endPoints = getPossibleMovePoints(game);
+	for (const tile of tilePile) {
+		if (tile.type !== BASIC_FLOWER) continue;
 
-			for (let j = 0; j < endPoints.length; j++) {
-				let notationBuilder = new SkudPaiShoNotationBuilder();
-				notationBuilder.moveType = PLANTING;
+		// Only need to look at planting each tile type once because moves will be the same for each
+		if (plantTypesAnalyzed.has(tile.code)) continue;
+		plantTypesAnalyzed.add(tile.code);
 
-				notationBuilder.plantedFlowerType = tile.code;
-				notationBuilder.status = WAITING_FOR_ENDPOINT;
+		// For each basic flower get possible plant points
+		const convertedMoveNum = moveNum * 2;
+		game.revealOpenGates(player, tile, convertedMoveNum, true);
+		const endPoints = getPossibleMovePoints(game);
 
-				const endPoint = endPoints[j];
+		for (const endPoint of endPoints) {
+			let notationBuilder = new SkudPaiShoNotationBuilder();
+			notationBuilder.moveType = PLANTING;
 
-				notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
-				let move = notationBuilder.getNotationMove(moveNum, player);
+			notationBuilder.plantedFlowerType = tile.code;
+			notationBuilder.status = WAITING_FOR_ENDPOINT;
 
-				game.hidePossibleMovePoints(true);
+			notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
+			let move = notationBuilder.getNotationMove(moveNum, player);
+			moves.push(move);
 
-				const moveKey = move.fullMoveText;
-				if (!moveSet.has(moveKey)) {
-					moveSet.add(moveKey);
-					moves.push(move);
-				}
-			}
+			game.hidePossibleMovePoints(true);
 		}
 	}
 };
@@ -102,33 +98,23 @@ export function addPlantMoves(moves, game, player, moveNum) {
  */
 export function addArrangeMoves(moves, game, player, moveNum) {
 	const startPoints = getStartPoints(game, player);
-	let moveSet = new Set();
 
-	for (let i = 0; i < startPoints.length; i++) {
-		const startPoint = startPoints[i];
-
+	for (const startPoint of startPoints) {
 		game.revealPossibleMovePoints(startPoint, true);
 
 		const endPoints = getPossibleMovePoints(game);
 
-		for (let j = 0; j < endPoints.length; j++) {
+		for (const endPoint of endPoints) {
 			let notationBuilder = new SkudPaiShoNotationBuilder();
 			notationBuilder.status = WAITING_FOR_ENDPOINT;
 			notationBuilder.moveType = ARRANGING;
 			notationBuilder.startPoint = new NotationPoint(getNotation(startPoint));
 
-			const endPoint = endPoints[j];
-
 			notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
 			let move = notationBuilder.getNotationMove(moveNum, player);
+			moves.push(move);
 
 			game.hidePossibleMovePoints(true);
-
-			const moveKey = move.fullMoveText;
-			if (!moveSet.has(moveKey)) {
-				moveSet.add(moveKey);
-				moves.push(move);
-			}
 		}
 	}
 };
@@ -278,6 +264,7 @@ export function getTilePile(game, player) {
 	return tilePile;
 };
 
+const gateCells = [ [8, 0], [8, 16], [0, 8], [16, 8] ];
 /**
  * Check if there is at least one open gate
  * @param {SkudPaiShoGameManager} game - Copy of game state
@@ -285,13 +272,10 @@ export function getTilePile(game, player) {
  */
 export function isOpenGate(game) {
 	const cells = game.board.cells;
-	for (let row = 0; row < cells.length; row++) {
-		for (let col = 0; col < cells[row].length; col++) {
-			if (cells[row][col].isOpenGate()) {
-				return true;
-			}
-		}
+	for (const gateCell of gateCells) {
+		if (cells[gateCell[0]][gateCell[1]].isOpenGate()) return true;
 	}
+	return false;
 };
 
 /**
