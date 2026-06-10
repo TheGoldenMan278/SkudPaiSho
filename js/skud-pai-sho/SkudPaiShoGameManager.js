@@ -349,7 +349,7 @@ export class SkudPaiShoGameManager {
 			return this.board.playerHasNoGrowingFlowers(player);
 		} else if (newGatesRule) {
 			// New Gate Rules: Player cannot plant on Bonus if already controlling two Gates
-			return this.board.playerControlsLessThanTwoGates(player);
+			return this.board.playerHasNoGrowingFlowers(player, true);
 		}
 	}
 

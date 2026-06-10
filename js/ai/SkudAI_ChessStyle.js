@@ -136,7 +136,7 @@ SkudChessAI.prototype.getMove = function(game, moveNum) {
             let currentBest = bestMove;
 
 			for (let move of moves) {
-				let moveResults = copyGame.runNotationMove(move);
+				let moveResults = copyGame.runNotationMove(move, false);
 		
 				let score = -this.negamax(copyGame, depth - 1, -Infinity, Infinity, -1);
 				copyGame.undoNotationMove(move, moveResults);
@@ -223,7 +223,7 @@ SkudChessAI.prototype.negamax = function(game, depth, alpha, beta, color) {
 	let maxEval = -Infinity;
 	for (let move of moves) {
 		this.stats.applyCalls++;
-		let moveResults = this.timed(() => game.runNotationMove(move), "applyTime");
+		let moveResults = this.timed(() => game.runNotationMove(move, false), "applyTime");
 
 		// Alpha and Beta switch places and signs when switching between the players' perspectives
 		let score = -this.negamax(game, depth - 1, -beta, -alpha, -color);

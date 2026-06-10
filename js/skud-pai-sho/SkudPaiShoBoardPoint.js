@@ -26,71 +26,8 @@ export class SkudPaiShoBoardPoint {
 		this.row = -1;
 		/** @type {number} */
 		this.col = -1;
-	}
-
-	// =========================================================
-	// Static Factory SkudPaiShoBoardPoint Generators
-	// =========================================================
-	/** @returns {SkudPaiShoBoardPoint} */
-	static neutral() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(NEUTRAL);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static gate() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(GATE);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static red() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(RED);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static white() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(WHITE);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static redWhite() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(RED);
-		point.addType(WHITE);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static redWhiteNeutral() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(RED);
-		point.addType(WHITE);
-		point.addType(NEUTRAL);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static redNeutral() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(RED);
-		point.addType(NEUTRAL);
-		
-		return point;
-	}
-	/** @returns {SkudPaiShoBoardPoint} */
-	static whiteNeutral() {
-		const point = new SkudPaiShoBoardPoint();
-		point.addType(WHITE);
-		point.addType(NEUTRAL);
-		
-		return point;
+		/** @type {?SkudPaiShoTile} */
+		this.tile = null;
 	}
 
 	// =========================================================
@@ -173,9 +110,7 @@ export class SkudPaiShoBoardPoint {
 	 * @returns {boolean}
 	 */
 	hasTile() {
-		if (this.tile) {
-			return true;
-		}
+		if (this.tile) return true;
 		return false;
 	}
 
@@ -212,65 +147,42 @@ export class SkudPaiShoBoardPoint {
 	 * Drain this.tile if it exists.
 	 */
 	drainTile() {
-		if (this.tile) {
-			this.tile.drain();
-		}
+		if (this.tile) this.tile.drain();
 	}
 
 	/**
 	 * Restore this.tile if it exists.
 	 */
 	restoreTile() {
-		if (this.tile) {
-			this.tile.restore();
-		}
+		if (this.tile) this.tile.restore();
 	}
 
 	/**
-	 * Checks if given tile can be placed/moved onto current SkudPaiShoBoardPoint (Excludes captures).
+	 * Checks if given tile can be moved onto this SkudPaiShoBoardPoint
+	 * (Also used to check valid planting next to pond)
 	 * @param {SkudPaiShoTile} tile - Tile to check.
-	 * @param {boolean} ignoreTileCheck - Skip checking if SkudPaiShoBoardPoint has a tile already.
+	 * @param {boolean} ignoreTileCheck - Skip checking if SkudPaiShoBoardPoint has a tile already (Used for checking captures)
 	 * @returns {boolean} Can hold tile.
 	 */
 	canHoldTile(tile, ignoreTileCheck) {
-		// Validate this point's ability to hold given tile
-		if (this.isType(NON_PLAYABLE)) {
+		// Can't move to non_playable point or back onto gate
+		if (this.isType(NON_PLAYABLE) || this.isType(GATE)) {
 			return false;
-		}
-
-		if (!ignoreTileCheck && this.hasTile()) {
-			// This function does not take into account capturing abilities
+		// This function does not take into account capturing abilities
+		} else if (!ignoreTileCheck && this.hasTile()) {
 			return false;
-		}
-
-		if (tile.type === BASIC_FLOWER) {
+		// For basic flowers, can't move into opposing colored garden
+		} else if (tile.type === BASIC_FLOWER) {
 			if (!(this.isType(NEUTRAL) || this.isType(tile.basicColorName))) {
-				// Opposing colored point
 				return false;
 			}
-
-			if (this.isType(GATE)) {
-				return false;
-			}
-
 			return true;
-		} else if (tile.type === SPECIAL_FLOWER) {
-			return true;
-		} else if (tile.type === ACCENT_TILE) {
+		// Garden color rules don't apply to special flowers and accents
+		} else if (tile.type === SPECIAL_FLOWER || tile.type === ACCENT_TILE) {
 			return true;
 		}
 
-		return false;
-	}
-
-	/** Standard BoardPoint function (unused) */
-	betweenPlayerHarmony(player) {
-		if (player === GUEST) {
-			return this.betweenHarmonyGuest;
-		} else if (player === HOST) {
-			return this.betweenHarmonyHost;
-		}
-		return false;
+		return false; // Fallback to false if unrecognized tile is passed in
 	}
 
 	/**
@@ -300,8 +212,8 @@ export class SkudPaiShoBoardPoint {
 		const copy = new SkudPaiShoBoardPoint();
 
 		// this.types
-		for (let i = 0; i < this.types.length; i++) {
-			copy.types.push(this.types[i]);
+		for (const type of this.types) {
+			copy.types.push(type);
 		}
 
 		// this.row

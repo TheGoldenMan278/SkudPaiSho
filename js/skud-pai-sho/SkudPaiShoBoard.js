@@ -36,6 +36,7 @@ import {
 import {
 	GATE,
 	NON_PLAYABLE,
+	NEUTRAL,
 	POSSIBLE_MOVE,
 	SkudPaiShoBoardPoint,
 } from './SkudPaiShoBoardPoint';
@@ -49,10 +50,18 @@ import {
 	SkudPaiShoHarmony,
 	SkudPaiShoHarmonyManager
 } from './SkudPaiShoHarmony';
-import { SkudPaiShoTile } from './SkudPaiShoTile';
+import { SkudPaiShoTile, WHITE, RED } from './SkudPaiShoTile';
 import { SkudPaiShoTileManager } from './SkudPaiShoTileManager';
 import { paiShoBoardMaxRowOrCol } from '../pai-sho-common/PaiShoBoardHelp';
 import { showBadMoveModal } from '../ModalManager';
+
+// Define the 4 directions: [rowOffset, colOffset]
+const DIRECTIONS = [
+  [-1, 0], // Up
+  [1, 0],  // Down
+  [0, -1], // Left
+  [0, 1]   // Right
+];
 
 export class SkudPaiShoBoard {
 	// =========================================================
@@ -76,342 +85,50 @@ export class SkudPaiShoBoard {
 	brandNew() {
 		const cells = [];
 
-		cells[0] = this.newRow(9,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.gate(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
+		// 0 - Non_Playable, 1 - Gate, 2 - Neutral, 3 - Red, 4 - White,
+		// 5 - Red_White, 6 - Red_Neutral, 7 - White_Neutral, 8 - Red_White_Neutral
+		const cellPointTypes = [
+			[0, 0, 0, 0, 2, 2, 2, 2, 1, 2, 2, 2, 2, 0, 0, 0, 0],
+			[0, 0, 0, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 0, 0, 0],
+			[0, 0, 2, 2, 2, 2, 2, 7, 5, 6, 2, 2, 2, 2, 2, 0, 0],
+			[0, 2, 2, 2, 2, 2, 7, 4, 5, 3, 6, 2, 2, 2, 2, 2, 0],
+			[2, 2, 2, 2, 2, 7, 4, 4, 5, 3, 3, 6, 2, 2, 2, 2, 2],
+			[2, 2, 2, 2, 7, 4, 4, 4, 5, 3, 3, 3, 6, 2, 2, 2, 2],
+			[2, 2, 2, 7, 4, 4, 4, 4, 5, 3, 3, 3, 3, 6, 2, 2, 2],
+			[2, 2, 7, 4, 4, 4, 4, 4, 5, 3, 3, 3, 3, 3, 6, 2, 2],
+			[1, 8, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 8, 1],
+			[2, 2, 6, 3, 3, 3, 3, 3, 5, 4, 4, 4, 4, 4, 7, 2, 2],
+			[2, 2, 2, 6, 3, 3, 3, 3, 5, 4, 4, 4, 4, 7, 2, 2, 2],
+			[2, 2, 2, 2, 6, 3, 3, 3, 5, 4, 4, 4, 7, 2, 2, 2, 2],
+			[2, 2, 2, 2, 2, 6, 3, 3, 5, 4, 4, 7, 2, 2, 2, 2, 2],
+			[0, 2, 2, 2, 2, 2, 6, 3, 5, 4, 7, 2, 2, 2, 2, 2, 0],
+			[0, 0, 2, 2, 2, 2, 2, 6, 5, 7, 2, 2, 2, 2, 2, 0, 0],
+			[0, 0, 0, 2, 2, 2, 2, 2, 8, 2, 2, 2, 2, 2, 0, 0, 0],
+			[0, 0, 0, 0, 2, 2, 2, 2, 1, 2, 2, 2, 2, 0, 0, 0, 0]
+		]
 
-		cells[1] = this.newRow(11,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redWhiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
+		for (let row = 0; row < cellPointTypes.length; row++) {
+			let thisRow = [];
+			for (let col = 0; col < cellPointTypes[row].length; col++){
+				const cellPointType = cellPointTypes[row][col]
+				let thisCell = new SkudPaiShoBoardPoint();
 
-		cells[2] = this.newRow(13,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[3] = this.newRow(15,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[4] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[5] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[6] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[7] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[8] = this.newRow(17,
-			[SkudPaiShoBoardPoint.gate(),
-			SkudPaiShoBoardPoint.redWhiteNeutral(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.redWhiteNeutral(),
-			SkudPaiShoBoardPoint.gate()
-			]);
-
-		cells[9] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[10] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[11] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[12] = this.newRow(17,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[13] = this.newRow(15,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.red(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.white(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[14] = this.newRow(13,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redNeutral(),
-			SkudPaiShoBoardPoint.redWhite(),
-			SkudPaiShoBoardPoint.whiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[15] = this.newRow(11,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.redWhiteNeutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		cells[16] = this.newRow(9,
-			[SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.gate(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral(),
-			SkudPaiShoBoardPoint.neutral()
-			]);
-
-		for (let row = 0; row < cells.length; row++) {
-			for (let col = 0; col < cells[row].length; col++) {
-				cells[row][col].row = row;
-				cells[row][col].col = col;
-			}
-		}
-
-		return cells;
-	}
-
-	/**
-	 * Fills in 1D array of SkudPaiShoBoardPoints with unplayable spots to create square 2D array
-	 * @param {number} numColumns - Number of columns playable columns in this row (allows creating circle shape)
-	 * @param {SkudPaiShoBoardPoint[]} points - 1D Array of playable SkudPaiShoBoardPoints
-	 * @returns {SkudPaiShoBoardPoint[]} Cells (1D)
-	 */
-	newRow(numColumns, points) {
-		const cells = [];
-
-		const numBlanksOnSides = (this.size.row - numColumns) / 2;
-
-		const nonPoint = new SkudPaiShoBoardPoint();
-		nonPoint.addType(NON_PLAYABLE);
-
-		for (let i = 0; i < this.size.row; i++) {
-			if (i < numBlanksOnSides) {
-				cells[i] = nonPoint;
-			} else if (i < numBlanksOnSides + numColumns) {
-				if (points) {
-					cells[i] = points[i - numBlanksOnSides];
-				} else {
-					cells[i] = nonPoint;
+				// Add relevant types to SkudPaiShoBoardPoint
+				if (cellPointType === 1) {
+					thisCell.addType(GATE);
+				} else if (cellPointType === 2 || cellPointType === 6 || cellPointType === 7 || cellPointType === 8) {
+					thisCell.addType(NEUTRAL);
+				} else if (cellPointType === 4 || cellPointType === 5 || cellPointType === 7 || cellPointType === 8) {
+					thisCell.addType(WHITE);
+				} else if (cellPointType === 3 || cellPointType === 5 || cellPointType === 6 || cellPointType === 8) {
+					thisCell.addType(RED);
 				}
-			} else {
-				cells[i] = nonPoint;
+
+				thisCell.row = row;
+				thisCell.col = col;
+				thisRow.push(thisCell);
 			}
+			cells.push(thisRow);
 		}
 
 		return cells;
@@ -449,7 +166,9 @@ export class SkudPaiShoBoard {
 				this.placeLionTurtle(tile, notationPoint);
 			}
 		} else {
-			this.putTileOnPoint(tile, notationPoint);
+			// Don't need any special effects when placing flowers
+			const point = this.cells[notationPoint.rowAndColumn.row][notationPoint.rowAndColumn.col];
+			point.putTile(tile);
 			if (tile.specialFlowerType === WHITE_LOTUS) {
 				this.playedWhiteLotusTiles.push(tile);
 			}
@@ -466,31 +185,12 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * General function for placing all non-accent tiles
-	 * @param {SkudPaiShoTile} tile
-	 * @param {NotationPoint} notationPoint - Target point for tile
-	 */
-	putTileOnPoint(tile, notationPoint) {
-		let point = notationPoint.rowAndColumn;
-		point = this.cells[point.row][point.col];
-
-		point.putTile(tile);
-	}
-
-	/**
-	 * Check if rock can be placed on point
-	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for rock tile
+	 * General check if accent tile can be placed on point
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for accent tile
 	 * @returns {boolean}
 	 */
-	canPlaceRock(boardPoint) {
-		if (boardPoint.hasTile()) {
-			// debug("Rock cannot be played on top of another tile");
-			return false;
-		}
-		if (boardPoint.isType(GATE)) {
-			return false;
-		}
-		return true;
+	canPlaceAccent(boardPoint) {
+		return !boardPoint.hasTile() && !boardPoint.isType(GATE);
 	}
 
 	/**
@@ -503,9 +203,7 @@ export class SkudPaiShoBoard {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
 
-		if (!this.canPlaceRock(boardPoint)) {
-			return false;
-		}
+		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		if (!boardPoint.isType(GATE)) {
 			boardPoint.putTile(tile);
@@ -519,14 +217,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceWheel(boardPoint) {
-		if (boardPoint.hasTile()) {
-			// debug("Wheel cannot be played on top of another tile");
-			return false;
-		}
-
-		if (boardPoint.isType(GATE)) {
-			return false;
-		}
+		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		// get surrounding RowAndColumn values
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
@@ -571,9 +262,6 @@ export class SkudPaiShoBoard {
 					const targetBp = this.cells[targetRowCol.row][targetRowCol.col];
 					if (!targetBp.canHoldTile(bp.tile, true)) {
 						return false;
-					}
-					if (targetBp.isType(GATE)) {
-						return false;	// Can't move tile onto a Gate
 					}
 				} else {
 					return false;	// Would move tile off board, no good
@@ -641,14 +329,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceKnotweed(boardPoint) {
-		if (boardPoint.hasTile()) {
-			// debug("Knotweed cannot be played on top of another tile");
-			return false;
-		}
-
-		if (boardPoint.isType(GATE)) {
-			return false;
-		}
+		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		if (!newKnotweedRules) {
 			// Knotweed can be placed next to Gate in new knotweed rules
@@ -700,14 +381,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceBoat(boardPoint, tile) {
-		if (!boardPoint.hasTile()) {
-			// debug("Boat always played on top of another tile");
-			return false;
-		}
-
-		if (boardPoint.isType(GATE)) {
-			return false;
-		}
+		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		if (boardPoint.tile.type === ACCENT_TILE && !boatOnlyMoves) {
 			if (boardPoint.tile.accentType !== KNOTWEED && !simplest && !rocksUnwheelable) {
@@ -797,24 +471,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceBamboo(boardPoint, tile) {
-		// if (!boardPoint.hasTile()) {
-		// 	// debug("Bamboo always played on top of another tile");
-		// 	return false;
-		// }
-		// if (boardPoint.isType(GATE)) {
-		// 	return false;
-		// }
-		// return true;
-
-
-		if (boardPoint.hasTile()) {
-			// debug("Bamboo cannot be played on top of another tile");
-			return false;
-		}
-
-		if (boardPoint.isType(GATE)) {
-			return false;
-		}
+		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		// Does it create Disharmony?
 		if (!gameOptionEnabled(IGNORE_CLASHING)) {
@@ -889,16 +546,6 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if pond can be placed on point
-	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for pond tile
-	 * @param {SkudPaiShoTile} tile - Tile that pond is played on top of (unused)
-	 * @returns {boolean}
-	 */
-	canPlacePond(boardPoint, tile) {
-		return !boardPoint.hasTile() && !boardPoint.isType(GATE);
-	}
-
-	/**
 	 * Specific function for placing pond tile
 	 * @param {SkudPaiShoTile} tile
 	 * @param {NotationPoint} notationPoint - Target point for pond tile
@@ -909,34 +556,11 @@ export class SkudPaiShoBoard {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
 
-		if (!ignoreCheck && !this.canPlacePond(boardPoint, tile)) {
-			return false;
-		}
+		if (!ignoreCheck && !this.canPlaceAccent(boardPoint)) return false;
 
 		// Place tile
 		boardPoint.putTile(tile);
 	}
-
-	/**
-	 * Check if lion turtle can be placed on point
-	 * @param {SkudPaiShoBoardPoint} boardPoint - Target point for lion turtle tile
-	 * @param {SkudPaiShoTile} tile - Tile that lion turtle is played on top of (unused)
-	 * @returns {boolean}
-	 */
-	canPlaceLionTurtle(boardPoint, tile) {
-		return !boardPoint.hasTile()
-			&& !boardPoint.isType(GATE);
-	}
-
-	// SkudPaiShoBoard.prototype.pointSurroundsPointSurroundingLionTurtle = function(boardPoint) {
-	// 	const rowCols = this.getSurroundingRowAndCols(boardPoint);
-	// 	for (let i = 0; i < rowCols.length; i++) {
-	// 		if (this.getSurroundingLionTurtleTile(rowCols[i])) {
-	// 			return true;
-	// 		}
-	// 	}
-	// 	return false;
-	// }
 
 	/**
 	 * Specific function for placing lion turtle tile
@@ -949,9 +573,7 @@ export class SkudPaiShoBoard {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
 
-		if (!ignoreCheck && !this.canPlaceLionTurtle(boardPoint, tile)) {
-			return false;
-		}
+		if (!ignoreCheck && !this.canPlaceAccent(boardPoint)) return false;
 
 		// Place tile
 		boardPoint.putTile(tile);
@@ -1163,13 +785,13 @@ export class SkudPaiShoBoard {
 		const rowAndCols = [];
 		for (let row = rowAndCol.row - 1; row <= rowAndCol.row + 1; row++) {
 			for (let col = rowAndCol.col - 1; col <= rowAndCol.col + 1; col++) {
-				if ((row !== rowAndCol.row || col !== rowAndCol.col)	// Not the center given point
-					&& (row >= 0 && col >= 0) && (row < 17 && col < 17)) {	// Not outside range of the grid
-					const boardPoint = this.cells[row][col];
-					if (!boardPoint.isType(NON_PLAYABLE)) {	// Not non-playable
-						rowAndCols.push(new RowAndColumn(row, col));
-					}
-				}
+				if (row === rowAndCol.row && col === rowAndCol.col) continue;	// Skip given center point
+				if (row >= 0 || col >= 0 || row < 17 || col < 17) continue;	// Skip points outside range of the grid
+				console.log(row, col);
+				const boardPoint = this.cells[row][col];
+				if (boardPoint.isType(NON_PLAYABLE)) continue;	// Skip non-playable points
+
+				rowAndCols.push(new RowAndColumn(row, col));
 			}
 		}
 		return rowAndCols;
@@ -1202,8 +824,8 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if point is open gate and adjacent to pond
-	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 * Check if point has no tile and is adjacent to pond
+	 * @param {SkudPaiShoBoardPoint} boardPoint - Planting tile position
 	 * @returns {boolean}
 	 */
 	pointIsOpenAndSurroundsPond(boardPoint) {
@@ -1211,8 +833,8 @@ export class SkudPaiShoBoard {
 			return false;
 		}
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-		for (let i = 0; i < rowCols.length; i++) {
-			const surroundingPoint = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of rowCols) {
+			const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === POND) {
 				return true;
 			}
@@ -1236,7 +858,7 @@ export class SkudPaiShoBoard {
 		const startRowCol = notationPointStart.rowAndColumn;
 		const endRowCol = notationPointEnd.rowAndColumn;
 
-		if (startRowCol.row < 0 || startRowCol.row > 16 || endRowCol.row < 0 || endRowCol.row > 16) {
+		if (!this.isValidRowCol(startRowCol) || !this.isValidRowCol(endRowCol)) {
 			debug("That point does not exist. So it's not gonna happen.");
 			return false;
 		}
@@ -1297,10 +919,11 @@ export class SkudPaiShoBoard {
 				}
 			}
 		}
-		// Find Orchid tiles, then check surrounding opposite-player Basic Flower tiles and flag them
+		// Find Orchid/Knotweed tiles, then check surrounding opposite-player Basic Flower tiles and flag them
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
 				const bp = this.cells[row][col];
+				if (!bp.hasTile()) continue;
 				if (!bp.isType(GATE)) {
 					this.trapTilesSurroundingPointIfNeeded(bp);
 				}
@@ -1316,21 +939,14 @@ export class SkudPaiShoBoard {
 	 * @param {SkudPaiShoBoardPoint} boardPoint
 	 */
 	drainTilesSurroundingPointIfNeeded(boardPoint) {
-		if (!newKnotweedRules) {
-			return;
-		}
-		if (!boardPoint.hasTile()) {
-			return;
-		}
-		if (boardPoint.tile.accentType !== KNOTWEED) {
-			return;
-		}
+		if (!newKnotweedRules) return; // Knotweed traps instead of draining with old knotweed rules
+		if (boardPoint.tile.accentType !== KNOTWEED) return;
 
-		// get surrounding RowAndColumn values
+		// Get surrounding RowAndColumn values
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
 
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of rowCols) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			if (bp.hasTile() && !bp.isType(GATE) && bp.tile.type !== ACCENT_TILE && bp.tile.specialFlowerType !== ORCHID) {
 				bp.tile.drained = true;
 			}
@@ -1342,20 +958,15 @@ export class SkudPaiShoBoard {
 	 * @param {SkudPaiShoBoardPoint} boardPoint
 	 */
 	trapTilesSurroundingPointIfNeeded(boardPoint) {
-		if (!boardPoint.hasTile()) {
-			return;
-		}
-		if (boardPoint.tile.specialFlowerType !== ORCHID) {
-			return;
-		}
+		if (boardPoint.tile.specialFlowerType !== ORCHID) return;
 
 		const orchidOwner = boardPoint.tile.ownerName;
 
-		// get surrounding RowAndColumn values
+		// Get surrounding RowAndColumn values
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
 
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of rowCols) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			if (bp.hasTile() && !bp.isType(GATE)) {
 				if (bp.tile.ownerName !== orchidOwner && bp.tile.type !== ACCENT_TILE) {
 					bp.tile.trapped = true;
@@ -1365,18 +976,13 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if white lotus tile can be captured
+	 * Check if white lotus tile is protected from being captured
 	 * @param {SkudPaiShoTile} lotusTile
 	 * @returns {boolean}
 	 */
 	whiteLotusProtected(lotusTile) {
-		if (lotusNoCapture || simplest) {
-			return true;
-		}
-
-		if (simpleSpecialFlowerRule) {
-			return true;	// Simplest? Cannot be captured.
-		}
+		// Check if ruleset ever allows white lotus to be captured
+		if (lotusNoCapture || simplest || simpleSpecialFlowerRule) return true;
 
 		// Testing Lotus never protected:
 		return false;
@@ -1403,9 +1009,8 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	orchidCanCapture(orchidTile) {
-		if (simpleSpecialFlowerRule || simplest) {
-			return false;	// Simplest? Never can capture.
-		}
+		// Check if current ruleset ever allows orchid capture
+		if (simpleSpecialFlowerRule || simplest) return false;
 
 		// Note: This method does not check if other tile is protected from capture.
 		let orchidCanCapture = false;
@@ -1479,32 +1084,24 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canCapture(boardPointStart, boardPointEnd) {
-		if (gameOptionEnabled(EVERYTHING_CAPTURE)) {
-			return true;
-		}
+		if (gameOptionEnabled(EVERYTHING_CAPTURE)) return true;
 
 		const tile = boardPointStart.tile;
 		const otherTile = boardPointEnd.tile;
 
-		if (tile.ownerName === otherTile.ownerName) {
-			return false;	// Cannot capture own tile
-		}
+		// Player cannot capture their own tiles
+		if (tile.ownerName === otherTile.ownerName) return false;
 
 		// Does end point surround Bamboo? Cannot capture tiles surrounding Bamboo
 		const surroundingRowCols = this.getSurroundingRowAndCols(boardPointEnd);
-		for (let i = 0; i < surroundingRowCols.length; i++) {
-			const surroundingPoint = this.cells[surroundingRowCols[i].row][surroundingRowCols[i].col];
-			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === BAMBOO) {
-				return false;	// Surrounds Bamboo
-			}
+		for (const surroundingRowCol of surroundingRowCols) {
+			const surroundingPoint = this.cells[surroundingRowCol.row][surroundingRowCol.col];
+			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === BAMBOO) return false;
 		}
 
-		// Is tile Orchid that can capture?
-		// If so, Orchid can capture basic or special flower
-		if (tile.specialFlowerType === ORCHID && otherTile.type !== ACCENT_TILE) {
-			if (this.orchidCanCapture(tile)) {
-				return true;
-			}
+		// Is tile Orchid that can capture? If so, Orchid can capture basic or special flower
+		if (tile.specialFlowerType === ORCHID && otherTile.type !== ACCENT_TILE && this.orchidCanCapture(tile)) {
+			return true;
 		}
 
 		// Check otherTile White Lotus protected from capture
@@ -1517,75 +1114,14 @@ export class SkudPaiShoBoard {
 		}
 
 		// Clashing Basic Flowers check
-		if (tile.clashesWith(otherTile)) {
-			return true;
-		}
+		if (tile.clashesWith(otherTile)) return true;
 
 		// Orchid checks
 		// Can otherTile Orchid be captured?
 		// If vulnerable, it can be captured by any flower tile
-		if (otherTile.specialFlowerType === ORCHID && tile.type !== ACCENT_TILE) {
-			if (this.orchidVulnerable(otherTile)) {
-				return true;
-			}
+		if (otherTile.specialFlowerType === ORCHID && tile.type !== ACCENT_TILE && this.orchidVulnerable(otherTile)) {
+			return true;
 		}
-	}
-
-	/**
-	 * Check if tile in start point can teleport to end point
-	 * Does no verifying that tile can reach target point with standard movement
-	 * @param {string} player - Player can only move their own tiles
-	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
-	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
-	 * @returns {boolean}
-	 */
-	couldMoveTileToPoint(player, boardPointStart, boardPointEnd) {
-		// start point must have a tile
-		if (!boardPointStart.hasTile()) {
-			return false;
-		}
-
-		// Tile must belong to player
-		if (boardPointStart.tile.ownerName !== player) {
-			return false;
-		}
-
-		// Cannot move drained or trapped tile
-		if (boardPointStart.tile.trapped) {
-			return false;
-		}
-
-		if (!newKnotweedRules && boardPointStart.tile.drained) {
-			return false;
-		}
-
-		// If endpoint is a Gate, that's wrong.
-		if (boardPointEnd.isType(GATE)) {
-			return false;
-		}
-
-		let canCapture = false;
-		if (boardPointEnd.hasTile()) {
-			canCapture = this.canCapture(boardPointStart, boardPointEnd);
-		}
-
-		// If endpoint has a tile there that can't be captured, that is wrong.
-		if (boardPointEnd.hasTile() && !canCapture) {
-			return false;
-		}
-
-		if (!boardPointEnd.canHoldTile(boardPointStart.tile, canCapture)) {
-			return false;
-		}
-
-		// What if moving the tile there creates a Disharmony on the board? That can't happen!
-		if (!gameOptionEnabled(IGNORE_CLASHING)
-			&& this.moveCreatesDisharmony(boardPointStart, boardPointEnd)) {
-			return false;
-		}
-
-		// I guess we made it through
-		return true;
 	}
 
 	/**
@@ -1593,38 +1129,32 @@ export class SkudPaiShoBoard {
 	 * @param {string} player - Player can only move their own tiles
 	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
 	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
+	 * @param {boolean} isTeleport - Ignore checking if tile has enough movement spaces to get to end point
 	 * @returns {boolean}
 	 */
-	canMoveTileToPoint(player, boardPointStart, boardPointEnd) {
-		// start point must have a tile
+	canMoveTileToPoint(player, boardPointStart, boardPointEnd, isTeleport = false) {
+		// Start point must have a tile
 		if (!boardPointStart.hasTile()) {
 			debug("canMoveTileToPoint: Start point has no tile");
 			return false;
-		}
-
 		// Tile must belong to player
-		if (boardPointStart.tile.ownerName !== player) {
+		} else if (boardPointStart.tile.ownerName !== player) {
 			debug("canMoveTileToPoint: Tile does not belong to player (owner: " + boardPointStart.tile.ownerName + ", player: " + player + ")");
 			return false;
-		}
-
-		// Cannot move drained or trapped tile
-		if (boardPointStart.tile.trapped) {
+		// Cannot move trapped tile or drained tile with old knotweed rules
+		} else if (boardPointStart.tile.trapped) {
 			debug("canMoveTileToPoint: Tile is trapped");
 			return false;
-		}
-
-		if (!newKnotweedRules && boardPointStart.tile.drained) {
+		} else if (!newKnotweedRules && boardPointStart.tile.drained) {
 			debug("canMoveTileToPoint: Tile is drained (old knotweed rules)");
 			return false;
-		}
-
 		// If endpoint is a Gate, that's wrong.
-		if (boardPointEnd.isType(GATE)) {
+		} else if (boardPointEnd.isType(GATE)) {
 			debug("canMoveTileToPoint: Cannot move to a Gate");
 			return false;
 		}
 
+		// Check if move results in valid capture
 		let canCapture = false;
 		if (boardPointEnd.hasTile()) {
 			canCapture = this.canCapture(boardPointStart, boardPointEnd);
@@ -1634,23 +1164,24 @@ export class SkudPaiShoBoard {
 		if (boardPointEnd.hasTile() && !canCapture) {
 			debug("canMoveTileToPoint: Endpoint has a tile that cannot be captured");
 			return false;
-		}
-
-		if (!boardPointEnd.canHoldTile(boardPointStart.tile, canCapture)) {
+		// Can't allow capture because moving to end position would break a rule (ex. trying to move to wrong garden color)
+		} else if (!boardPointEnd.canHoldTile(boardPointStart.tile, canCapture)) {
 			debug("canMoveTileToPoint: Endpoint cannot hold this tile");
 			return false;
 		}
 
-		// If endpoint is too far away, that is wrong.
-		const numMoves = boardPointStart.tile.getMoveDistance();
-		if (Math.abs(boardPointStart.row - boardPointEnd.row) + Math.abs(boardPointStart.col - boardPointEnd.col) > numMoves) {
-			debug("canMoveTileToPoint: Endpoint is too far away (distance: " + (Math.abs(boardPointStart.row - boardPointEnd.row) + Math.abs(boardPointStart.col - boardPointEnd.col)) + ", max moves: " + numMoves + ")");
-			return false;
-		} else {
-			// Move may be possible. But there may be tiles in the way...
-			if (!this.verifyAbleToReach(boardPointStart, boardPointEnd, numMoves)) {
-				debug("canMoveTileToPoint: Tiles are in the way, cannot reach destination");
+		if (!isTeleport) {
+			// If endpoint is too far away, that is wrong.
+			const numMoves = boardPointStart.tile.getMoveDistance();
+			if (Math.abs(boardPointStart.row - boardPointEnd.row) + Math.abs(boardPointStart.col - boardPointEnd.col) > numMoves) {
+				debug("canMoveTileToPoint: Endpoint is too far away (distance: " + (Math.abs(boardPointStart.row - boardPointEnd.row) + Math.abs(boardPointStart.col - boardPointEnd.col)) + ", max moves: " + numMoves + ")");
 				return false;
+			} else {
+				// Move may be possible. But there may be tiles in the way...
+				if (!this.verifyAbleToReach(boardPointStart, boardPointEnd, numMoves)) {
+					debug("canMoveTileToPoint: Tiles are in the way, cannot reach destination");
+					return false;
+				}
 			}
 		}
 
@@ -1666,32 +1197,17 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if tile in start point can be moved to end point by boat
+	 * Check if tile in start point can be moved to end point by boat special ability
 	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
 	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
 	 * @returns {boolean}
 	 */
 	canTransportTileToPointWithBoat(boardPointStart, boardPointEnd) {
-		// Transport Tile: used in Boat special ability
+		// Start point must have a tile
+		if (!boardPointStart.hasTile()) return false;
 
-		// start point must have a tile
-		if (!boardPointStart.hasTile()) {
-			return false;
-		}
-
-		// If endpoint is a Gate, that's wrong.
-		if (boardPointEnd.isType(GATE)) {
-			return false;
-		}
-
-		// If endpoint has a tile, that is wrong.
-		if (boardPointEnd.hasTile()) {
-			return false;
-		}
-
-		if (!boardPointEnd.canHoldTile(boardPointStart.tile)) {
-			return false;
-		}
+		// Check that boat transport doesn't break any rules (can't move onto non_playable/gate/other tile, can't move into opposing color garden)
+		if (!boardPointEnd.canHoldTile(boardPointStart.tile)) return false;
 
 		// What if moving the tile there creates a Disharmony on the board? That can't happen!
 		// if (this.moveCreatesDisharmony(boardPointStart, boardPointEnd)) {
@@ -1742,6 +1258,7 @@ export class SkudPaiShoBoard {
 					}
 				}
 			}
+			if (clashFound) break;
 		}
 
 		// Put tiles back the way they were if needed
@@ -1754,95 +1271,42 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Recursive function to check valid arranging movement with "PathFound"
-	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
+	 * Recursive function to check valid arranging movement
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile (Or current point in recursion)
 	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
-	 * @param {number} numMoves - Number of basic movement spaces
+	 * @param {number} numMoves - Number of basic movement spaces (Or spaces remaining in recursion)
 	 * @returns {boolean}
 	 */
 	verifyAbleToReach(boardPointStart, boardPointEnd, numMoves) {
-		// Recursion!
-		return this.pathFound(boardPointStart, boardPointEnd, numMoves);
-	}
-
-	/**
-	 * Recursive function to check valid arranging movement
-	 * @param {SkudPaiShoBoardPoint} boardPointStart - Start point of moving tile
-	 * @param {SkudPaiShoBoardPoint} boardPointEnd - End point of moving tile
-	 * @param {number} numMoves - Number of basic movement spaces remaining
-	 * @returns {boolean}
-	 */
-	pathFound(boardPointStart, boardPointEnd, numMoves) {
-		if (!boardPointStart || !boardPointEnd) {
-			return false;
-		}
-
-		if (boardPointStart.isType(NON_PLAYABLE) || boardPointEnd.isType(NON_PLAYABLE)) {
-			return false;
-		}
+		if (!boardPointStart || !boardPointEnd) return false;
+		if (boardPointStart.isType(NON_PLAYABLE) || boardPointEnd.isType(NON_PLAYABLE)) return false;
 
 		const startRow = boardPointStart.row;
 		const startCol = boardPointStart.col;
 		const endRow = boardPointEnd.row;
 		const endCol = boardPointEnd.col;
 
-		if (startRow === endRow && startCol === endCol) {
-			return true;
-		}
+		if (startRow === endRow && startCol === endCol) return true; // Successfully reached end of path
 
-		if (numMoves <= 0) {
-			return false;
-		}
+		if (numMoves <= 0) return false; // Ran out of moves without reaching end of path
 
 		const minMoves = Math.abs(startRow - endRow) + Math.abs(startCol - endCol);
-		if (minMoves === 1) {
-			return true;
-		}
+		if (minMoves === 1) return true; // We are adjacent to end point, must be reachable
 
-		// Check each direction with explicit variables (no reassignment)
-		const upRow = startRow - 1;
-		const downRow = startRow + 1;
-		const leftCol = startCol - 1;
-		const rightCol = startCol + 1;
-		const movesLeft = numMoves - 1;
+		// Recursively check for open path in all 4 directions
+		for (const direction of DIRECTIONS) {
+			const moveRow = startRow + direction[0];
+			const moveCol = startCol + direction[1];
 
-		// UP
-		if (upRow >= 0) {
-			const upPoint = this.cells[upRow][startCol];
-			if (!upPoint.hasTile()) {
-				if (this.pathFound(upPoint, boardPointEnd, movesLeft)) {
-					return true;
-				}
-			}
-		}
+			// Boundary check to ensure we stay inside the board
+			if (moveRow < 0 || moveRow >= 17 || moveCol < 0 || moveCol >= 17) continue;
 
-		// DOWN
-		if (downRow < 17) {
-			const downPoint = this.cells[downRow][startCol];
-			if (!downPoint.hasTile()) {
-				if (this.pathFound(downPoint, boardPointEnd, movesLeft)) {
-					return true;
-				}
-			}
-		}
+			const movePoint = this.cells[moveRow][moveCol];
+			if (movePoint.hasTile()) continue;
 
-		// LEFT
-		if (leftCol >= 0) {
-			const leftPoint = this.cells[startRow][leftCol];
-			if (!leftPoint.hasTile()) {
-				if (this.pathFound(leftPoint, boardPointEnd, movesLeft)) {
-					return true;
-				}
-			}
-		}
-
-		// RIGHT
-		if (rightCol < 17) {
-			const rightPoint = this.cells[startRow][rightCol];
-			if (!rightPoint.hasTile()) {
-				if (this.pathFound(rightPoint, boardPointEnd, movesLeft)) {
-					return true;
-				}
+			// Check for path recursively, decrementing available movement
+			if (this.verifyAbleToReach(movePoint, boardPointEnd, numMoves - 1)) {
+				return true;
 			}
 		}
 
@@ -1854,44 +1318,23 @@ export class SkudPaiShoBoard {
 	// =========================================================
 
 	/**
-	 * Check if row has harmnonies blocked by rock
-	 * @param {number} rowNum
+	 * Check if row/col has harmnonies blocked by rock (Defaults to check row)
+	 * @param {number} rowOrColNum
+	 * @param {boolean} isRow - true: check row blocked, false: check col blocked
 	 * @returns {boolean}
 	 */
-	rowBlockedByRock(rowNum) {
-		if (simpleRocks || simplest) {
-			return false;	// simpleRocks: Rocks don't disable Harmonies.
-		}
+	rowOrColBlockedByRock(rowOrColNum, isRow = true) {
+		// simpleRocks: Rocks don't disable Harmonies.
+		if (simpleRocks || simplest) return false;	
 
-		let blocked = false;
 		this.rockRowAndCols.forEach(function(rowAndCol) {
-			if (rowAndCol.row === rowNum) {
-				blocked = true;
-			}
+			if (isRow && rowAndCol.row === rowOrColNum) return true;
+			if (!isRow && rowAndCol.col === rowOrColNum) return true;
 		});
-		return blocked;
+		return false;
 	}
 
-	/**
-	 * Check if column has harmnonies blocked by rock
-	 * @param {number} colNum
-	 * @returns {boolean}
-	 */
-	columnBlockedByRock(colNum) {
-		if (simpleRocks || simplest) {
-			return false;	// simpleRocks: Rocks don't disable Harmonies.
-		}
-
-		let blocked = false;
-		this.rockRowAndCols.forEach(function(rowAndCol) {
-			if (rowAndCol.col === colNum) {
-				blocked = true;
-			}
-		});
-		return blocked;
-	}
-
-	/** Refreshes this.harmonyManager and checks for winner */
+	/** Refreshes betweenHarmony/betweenHarmonyHost/betweenHarmonyGuest for all SkudPaiShoBoardPoints */
 	markSpacesBetweenHarmonies() {
 		// Unmark all
 		this.cells.forEach(function(row) {
@@ -1910,36 +1353,26 @@ export class SkudPaiShoBoard {
 			if (harmony.tile1Pos.row === harmony.tile2Pos.row) {
 				// Get smaller of the two
 				const row = harmony.tile1Pos.row;
-				let firstCol = harmony.tile1Pos.col;
-				let lastCol = harmony.tile2Pos.col;
-				if (harmony.tile2Pos.col < harmony.tile1Pos.col) {
-					firstCol = harmony.tile2Pos.col;
-					lastCol = harmony.tile1Pos.col;
-				}
+				const firstCol = Math.min(harmony.tile1Pos.col, harmony.tile2Pos.col);
+				const lastCol = Math.max(harmony.tile1Pos.col, harmony.tile2Pos.col);
 				for (let col = firstCol + 1; col < lastCol; col++) {
 					self.cells[row][col].betweenHarmony = true;
 					if (harmony.hasOwner(GUEST)) {
 						self.cells[row][col].betweenHarmonyGuest = true;
-					}
-					if (harmony.hasOwner(HOST)) {
+					}else if (harmony.hasOwner(HOST)) {
 						self.cells[row][col].betweenHarmonyHost = true;
 					}
 				}
 			} else if (harmony.tile2Pos.col === harmony.tile2Pos.col) {
 				// Get smaller of the two
 				const col = harmony.tile1Pos.col;
-				let firstRow = harmony.tile1Pos.row;
-				let lastRow = harmony.tile2Pos.row;
-				if (harmony.tile2Pos.row < harmony.tile1Pos.row) {
-					firstRow = harmony.tile2Pos.row;
-					lastRow = harmony.tile1Pos.row;
-				}
+				const firstRow = Math.min(harmony.tile1Pos.row, harmony.tile2Pos.row);
+				const lastRow = Math.max(harmony.tile1Pos.row, harmony.tile2Pos.row);
 				for (let row = firstRow + 1; row < lastRow; row++) {
 					self.cells[row][col].betweenHarmony = true;
 					if (harmony.hasOwner(GUEST)) {
 						self.cells[row][col].betweenHarmonyGuest = true;
-					}
-					if (harmony.hasOwner(HOST)) {
+					} else if (harmony.hasOwner(HOST)) {
 						self.cells[row][col].betweenHarmonyHost = true;
 					}
 				}
@@ -1947,7 +1380,7 @@ export class SkudPaiShoBoard {
 		});
 	}
 
-	/** Refreshes this.betweenHarmonyHost/Guest for all SkudPaiShoBoardPoints */
+	/** Refreshes this.harmonyManager and checks for winner */
 	analyzeHarmonies() {
 		// We're going to find all harmonies on the board
 
@@ -1957,33 +1390,33 @@ export class SkudPaiShoBoard {
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
 				const boardPoint = this.cells[row][col];
-				if (boardPoint.hasTile()) {
-					// Check for harmonies!
-					const tileHarmonies = this.getTileHarmonies(boardPoint);
-					// Add harmonies
-					this.harmonyManager.addHarmonies(tileHarmonies);
+				if (!boardPoint.hasTile()) continue;
 
-					boardPoint.tile.harmonyOwners = [];
+				// Check for harmonies!
+				const tileHarmonies = this.getTileHarmonies(boardPoint);
+				// Add harmonies
+				this.harmonyManager.addHarmonies(tileHarmonies);
 
-					for (let i = 0; i < tileHarmonies.length; i++) {
-						for (let j = 0; j < tileHarmonies[i].owners.length; j++) {
-							const harmonyOwnerName = tileHarmonies[i].owners[j].ownerName;
-							const harmonyTile1 = tileHarmonies[i].tile1;
-							const harmonyTile2 = tileHarmonies[i].tile2;
+				boardPoint.tile.harmonyOwners = [];
 
-							if (!harmonyTile1.harmonyOwners) {
-								harmonyTile1.harmonyOwners = [];
-							}
-							if (!harmonyTile2.harmonyOwners) {
-								harmonyTile2.harmonyOwners = [];
-							}
+				for (let i = 0; i < tileHarmonies.length; i++) {
+					for (let j = 0; j < tileHarmonies[i].owners.length; j++) {
+						const harmonyOwnerName = tileHarmonies[i].owners[j].ownerName;
+						const harmonyTile1 = tileHarmonies[i].tile1;
+						const harmonyTile2 = tileHarmonies[i].tile2;
 
-							if (!harmonyTile1.harmonyOwners.includes(harmonyOwnerName)) {
-								harmonyTile1.harmonyOwners.push(harmonyOwnerName);
-							}
-							if (!harmonyTile2.harmonyOwners.includes(harmonyOwnerName)) {
-								harmonyTile2.harmonyOwners.push(harmonyOwnerName);
-							}
+						if (!harmonyTile1.harmonyOwners) {
+							harmonyTile1.harmonyOwners = [];
+						}
+						if (!harmonyTile2.harmonyOwners) {
+							harmonyTile2.harmonyOwners = [];
+						}
+
+						if (!harmonyTile1.harmonyOwners.includes(harmonyOwnerName)) {
+							harmonyTile1.harmonyOwners.push(harmonyOwnerName);
+						}
+						if (!harmonyTile2.harmonyOwners.includes(harmonyOwnerName)) {
+							harmonyTile2.harmonyOwners.push(harmonyOwnerName);
 						}
 					}
 				}
@@ -2014,8 +1447,8 @@ export class SkudPaiShoBoard {
 	getSurroundingLionTurtleTiles(boardPoint) {
 		const surroundingLionTurtleTiles = [];
 		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-		for (let i = 0; i < rowCols.length; i++) {
-			const surroundingPoint = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of rowCols) {
+			const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === LION_TURTLE) {
 				surroundingLionTurtleTiles.push(surroundingPoint.tile);
 			}
@@ -2029,157 +1462,51 @@ export class SkudPaiShoBoard {
 	 * @returns {SkudPaiShoHarmony[]}
 	 */
 	getTileHarmonies(boardPoint) {
-		const tile = boardPoint.tile;
-		const rowAndCol = boardPoint;
 		const tileHarmonies = [];
+		
+		// Gates and open points never form harmony
+		if (boardPoint.isType(GATE) || !boardPoint.hasTile()) return tileHarmonies;
 
-		if (this.cells[rowAndCol.row][rowAndCol.col].isType(GATE)) {
-			return tileHarmonies;
-		}
+		const tile = boardPoint.tile;
+		const surroundingLionTurtleTiles = this.getSurroundingLionTurtleTiles(boardPoint);
 
-		const surroundingLionTurtleTiles = this.getSurroundingLionTurtleTiles(rowAndCol);
+		const rowBlockedByRock = this.rowOrColBlockedByRock(boardPoint.row, true);
+		const colBlockedByRock = this.rowOrColBlockedByRock(boardPoint.col, false);
 
-		if (!this.rowBlockedByRock(rowAndCol.row)) {
-			const leftHarmony = this.getHarmonyLeft(tile, rowAndCol, surroundingLionTurtleTiles);
-			if (leftHarmony) {
-				tileHarmonies.push(leftHarmony);
-			}
+		// Loop through checking for harmonies in all 4 directions
+		for (const direction of DIRECTIONS) {
+			// Skip analyzing the row/col if blocked by rock
+			if (direction[0] !== 0 && rowBlockedByRock) continue;
+			if (direction[1] !== 0 && colBlockedByRock) continue;
 
-			const rightHarmony = this.getHarmonyRight(tile, rowAndCol, surroundingLionTurtleTiles);
-			if (rightHarmony) {
-				tileHarmonies.push(rightHarmony);
-			}
-		}
+			// Length of board (16) is the max we could possibly have to move before breaking
+			for (let i = 1; i <= 16; i++) {
+				const row = boardPoint.row + (direction[0] * i);
+				const col = boardPoint.col + (direction[1] * i);
 
-		if (!this.columnBlockedByRock(rowAndCol.col)) {
-			const upHarmony = this.getHarmonyUp(tile, rowAndCol, surroundingLionTurtleTiles);
-			if (upHarmony) {
-				tileHarmonies.push(upHarmony);
-			}
+				// Boundary check to ensure we stay inside the 2D array
+				if (row < 0 || row >= 17 || col < 0 || col >= 17) break;
 
-			const downHarmony = this.getHarmonyDown(tile, rowAndCol, surroundingLionTurtleTiles);
-			if (downHarmony) {
-				tileHarmonies.push(downHarmony);
+				let newBoardPoint = this.cells[row][col];
+
+				// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
+				if (newBoardPoint.isType(NON_PLAYABLE) || newBoardPoint.isType(GATE)) break;
+
+				// Stop searching this direction once we find a tile in the line
+				if (newBoardPoint.hasTile()) {
+					let newSurroundingLionTurtles = this.getSurroundingLionTurtleTiles(newBoardPoint);
+					newSurroundingLionTurtles = newSurroundingLionTurtles.concat(surroundingLionTurtleTiles);
+					const surroundsLionTurtle = newSurroundingLionTurtles.length > 0;
+
+					if (tile.formsHarmonyWith(newBoardPoint.tile, surroundsLionTurtle)) {
+						tileHarmonies.push(new SkudPaiShoHarmony(tile, boardPoint, newBoardPoint.tile, new RowAndColumn(row, col), newSurroundingLionTurtles));
+					}
+					break;
+				}
 			}
 		}
 
 		return tileHarmonies;
-	}
-
-	/**
-	 * Check if tile forms a harmony with any tile to the left
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
-	 * @returns {?SkudPaiShoHarmony}
-	 */
-	getHarmonyLeft(tile, endRowCol, surroundingLionTurtleTiles) {
-		let colToCheck = endRowCol.col - 1;
-
-		while (colToCheck >= 0 && !this.cells[endRowCol.row][colToCheck].hasTile()
-			&& !this.cells[endRowCol.row][colToCheck].isType(GATE)) {
-			colToCheck--;
-		}
-
-		if (colToCheck >= 0) {
-			const checkPoint = this.cells[endRowCol.row][colToCheck];
-
-			let newSurroundingLionTurtles = this.getSurroundingLionTurtleTiles(checkPoint);
-			newSurroundingLionTurtles = newSurroundingLionTurtles.concat(surroundingLionTurtleTiles);
-			const surroundsLionTurtle = newSurroundingLionTurtles.length > 0;
-
-			if (!checkPoint.isType(GATE) && tile.formsHarmonyWith(checkPoint.tile, surroundsLionTurtle)) {
-				const harmony = new SkudPaiShoHarmony(tile, endRowCol, checkPoint.tile, new RowAndColumn(endRowCol.row, colToCheck), newSurroundingLionTurtles);
-				return harmony;
-			}
-		}
-	}
-
-	/**
-	 * Check if tile forms a harmony with any tile to the right
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
-	 * @returns {?SkudPaiShoHarmony}
-	 */
-	getHarmonyRight(tile, endRowCol, surroundingLionTurtleTiles) {
-		let colToCheck = endRowCol.col + 1;
-
-		while (colToCheck <= 16 && !this.cells[endRowCol.row][colToCheck].hasTile()
-			&& !this.cells[endRowCol.row][colToCheck].isType(GATE)) {
-			colToCheck++;
-		}
-
-		if (colToCheck <= 16) {
-			const checkPoint = this.cells[endRowCol.row][colToCheck];
-
-			let newSurroundingLionTurtles = this.getSurroundingLionTurtleTiles(checkPoint);
-			newSurroundingLionTurtles = newSurroundingLionTurtles.concat(surroundingLionTurtleTiles);
-			const surroundsLionTurtle = newSurroundingLionTurtles.length > 0;
-
-			if (!checkPoint.isType(GATE) && tile.formsHarmonyWith(checkPoint.tile, surroundsLionTurtle)) {
-				const harmony = new SkudPaiShoHarmony(tile, endRowCol, checkPoint.tile, new RowAndColumn(endRowCol.row, colToCheck), newSurroundingLionTurtles);
-				return harmony;
-			}
-		}
-	}
-
-	/**
-	 * Check if tile forms a harmony with any tile up
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
-	 * @returns {?SkudPaiShoHarmony}
-	 */
-	getHarmonyUp(tile, endRowCol, surroundingLionTurtleTiles) {
-		let rowToCheck = endRowCol.row - 1;
-
-		while (rowToCheck >= 0 && !this.cells[rowToCheck][endRowCol.col].hasTile()
-			&& !this.cells[rowToCheck][endRowCol.col].isType(GATE)) {
-			rowToCheck--;
-		}
-
-		if (rowToCheck >= 0) {
-			const checkPoint = this.cells[rowToCheck][endRowCol.col];
-
-			let newSurroundingLionTurtles = this.getSurroundingLionTurtleTiles(checkPoint);
-			newSurroundingLionTurtles = newSurroundingLionTurtles.concat(surroundingLionTurtleTiles);
-			const surroundsLionTurtle = newSurroundingLionTurtles.length > 0;
-
-			if (!checkPoint.isType(GATE) && tile.formsHarmonyWith(checkPoint.tile, surroundsLionTurtle)) {
-				const harmony = new SkudPaiShoHarmony(tile, endRowCol, checkPoint.tile, new RowAndColumn(rowToCheck, endRowCol.col), newSurroundingLionTurtles);
-				return harmony;
-			}
-		}
-	}
-
-	/**
-	 * Check if tile forms a harmony with any tile down
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @param {SkudPaiShoTile[]} surroundingLionTurtleTiles
-	 * @returns {?SkudPaiShoHarmony}
-	 */
-	getHarmonyDown(tile, endRowCol, surroundingLionTurtleTiles) {
-		let rowToCheck = endRowCol.row + 1;
-
-		while (rowToCheck <= 16 && !this.cells[rowToCheck][endRowCol.col].hasTile()
-			&& !this.cells[rowToCheck][endRowCol.col].isType(GATE)) {
-			rowToCheck++;
-		}
-
-		if (rowToCheck <= 16) {
-			const checkPoint = this.cells[rowToCheck][endRowCol.col];
-
-			let newSurroundingLionTurtles = this.getSurroundingLionTurtleTiles(checkPoint);
-			newSurroundingLionTurtles = newSurroundingLionTurtles.concat(surroundingLionTurtleTiles);
-			const surroundsLionTurtle = newSurroundingLionTurtles.length > 0;
-
-			if (!checkPoint.isType(GATE) && tile.formsHarmonyWith(checkPoint.tile, surroundsLionTurtle)) {
-				const harmony = new SkudPaiShoHarmony(tile, endRowCol, checkPoint.tile, new RowAndColumn(rowToCheck, endRowCol.col), newSurroundingLionTurtles);
-				return harmony;
-			}
-		}
 	}
 
 	/**
@@ -2204,122 +1531,35 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	hasDisharmony(boardPoint) {
-		if (boardPoint.isType(GATE)) {
-			return false;	// Gate never has disharmony
-		}
+		// Gates and open points never clash
+		if (boardPoint.isType(GATE) || !boardPoint.hasTile()) return false;
 
 		const tile = boardPoint.tile;
-		let clashFound = false;
 
-		if (this.hasDisharmonyLeft(tile, boardPoint)) {
-			clashFound = true;
-		}
+		// Loop through checking for clash in all 4 directions
+		for (const direction of DIRECTIONS) {
+			// Length of board (16) is the max we could possibly have to move before breaking
+			for (let i = 1; i <= 16; i++) {
+				const row = boardPoint.row + (direction[0] * i);
+				const col = boardPoint.col + (direction[1] * i);
 
-		if (this.hasDisharmonyRight(tile, boardPoint)) {
-			clashFound = true;
-		}
+				// Boundary check to ensure we stay inside the 2D array
+				if (row < 0 || row >= 17 || col < 0 || col >= 17) break;
 
-		if (this.hasDisharmonyUp(tile, boardPoint)) {
-			clashFound = true;
-		}
+				let newBoardPoint = this.cells[row][col];
 
-		if (this.hasDisharmonyDown(tile, boardPoint)) {
-			clashFound = true;
-		}
+				// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
+				if (newBoardPoint.isType(NON_PLAYABLE) || newBoardPoint.isType(GATE)) break;
 
-		return clashFound;
-	}
-
-	/**
-	 * Check if tile clashes with any tile to the left
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @returns {boolean}
-	 */
-	hasDisharmonyLeft(tile, endRowCol) {
-		let colToCheck = endRowCol.col - 1;
-
-		while (colToCheck >= 0 && !this.cells[endRowCol.row][colToCheck].hasTile()
-			&& !this.cells[endRowCol.row][colToCheck].isType(GATE)) {
-			colToCheck--;
-		}
-
-		if (colToCheck >= 0) {
-			const checkPoint = this.cells[endRowCol.row][colToCheck];
-			if (!checkPoint.isType(GATE) && tile.clashesWith(checkPoint.tile)) {
-				// debug("CLASHES Left: " + tile.getConsoleDisplay() + " & " + checkPoint.tile.getConsoleDisplay());
-				return true;
+				// We can stop this direction if we find a non-clashing tile blocking the path
+				if (newBoardPoint.hasTile()) {
+					if (!tile.clashesWith(newBoardPoint.tile)) break;
+					return true;
+				}
 			}
 		}
-	}
 
-	/**
-	 * Check if tile clashes with any tile to the right
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @returns {boolean}
-	 */
-	hasDisharmonyRight(tile, endRowCol) {
-		let colToCheck = endRowCol.col + 1;
-
-		while (colToCheck <= 16 && !this.cells[endRowCol.row][colToCheck].hasTile()
-			&& !this.cells[endRowCol.row][colToCheck].isType(GATE)) {
-			colToCheck++;
-		}
-
-		if (colToCheck <= 16) {
-			const checkPoint = this.cells[endRowCol.row][colToCheck];
-			if (!checkPoint.isType(GATE) && tile.clashesWith(checkPoint.tile)) {
-				// debug("CLASHES Right: " + tile.getConsoleDisplay() + " & " + checkPoint.tile.getConsoleDisplay());
-				return true;
-			}
-		}
-	}
-
-	/**
-	 * Check if tile clashes with any tile up
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @returns {boolean}
-	 */
-	hasDisharmonyUp(tile, endRowCol) {
-		let rowToCheck = endRowCol.row - 1;
-
-		while (rowToCheck >= 0 && !this.cells[rowToCheck][endRowCol.col].hasTile()
-			&& !this.cells[rowToCheck][endRowCol.col].isType(GATE)) {
-			rowToCheck--;
-		}
-
-		if (rowToCheck >= 0) {
-			const checkPoint = this.cells[rowToCheck][endRowCol.col];
-			if (!checkPoint.isType(GATE) && tile.clashesWith(checkPoint.tile)) {
-				// debug("CLASHES Up: " + tile.getConsoleDisplay() + " & " + checkPoint.tile.getConsoleDisplay());
-				return true;
-			}
-		}
-	}
-
-	/**
-	 * Check if tile clashes with any tile down
-	 * @param {SkudPaiShoTile} tile
-	 * @param {RowAndColumn} endRowCol - Position of tile
-	 * @returns {boolean}
-	 */
-	hasDisharmonyDown(tile, endRowCol) {
-		let rowToCheck = endRowCol.row + 1;
-
-		while (rowToCheck <= 16 && !this.cells[rowToCheck][endRowCol.col].hasTile()
-			&& !this.cells[rowToCheck][endRowCol.col].isType(GATE)) {
-			rowToCheck++;
-		}
-
-		if (rowToCheck <= 16) {
-			const checkPoint = this.cells[rowToCheck][endRowCol.col];
-			if (!checkPoint.isType(GATE) && tile.clashesWith(checkPoint.tile)) {
-				// debug("CLASHES Down: " + tile.getConsoleDisplay() + " & " + checkPoint.tile.getConsoleDisplay());
-				return true;
-			}
-		}
+		return false;
 	}
 
 	// =========================================================
@@ -2434,33 +1674,6 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Check if targetPoint has tile that can by captured by tile on originPoint
-	 * @param {SkudPaiShoTile} tile - Unused
-	 * @param {any} movementInfo - Unused
-	 * @param {SkudPaiShoBoardPoint} originPoint
-	 * @param {SkudPaiShoBoardPoint} targetPoint
-	 * @param {boolean} isDeploy - Unused
-	 * @returns {boolean}
-	 */
-	targetPointHasTileThatCanBeCaptured(tile, movementInfo, originPoint, targetPoint, isDeploy) {
-		return targetPoint.hasTile()
-			&& this.canCapture(originPoint, targetPoint);
-	}
-
-	/**
-	 * Check if tile can capture tile on targetPoint
-	 * @param {SkudPaiShoTile} tile
-	 * @param {any} movementInfo - Unused
-	 * @param {SkudPaiShoBoardPoint} fromPoint - Unused
-	 * @param {SkudPaiShoBoardPoint} targetPoint
-	 * @returns {boolean}
-	 */
-	tileCanCapture(tile, movementInfo, fromPoint, targetPoint) {
-		return tile.canCapture(targetPoint.tile)
-			|| (tile.type === AdevarTileType.secondFace && targetPoint.tile.type === AdevarTileType.hiddenTile);	// Allow attempting to capture HT with any SFT
-	}
-
-	/**
 	 * Checks if tile can move through targetPoint
 	 * @param {SkudPaiShoTile} tile - Unused
 	 * @param {any} movementInfo - Unused
@@ -2533,20 +1746,6 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * @param {SkudPaiShoBoard} board
-	 * @param {SkudPaiShoBoardPoint} originPoint
-	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
-	 * @param {any} movementInfo
-	 * @param {number} moveStepNumber - Unused
-	 * @returns {NotationPoint[]}
-	 */
-	static standardPlusDiagonalMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
-		const mustPreserveDirection = false;
-		const movePoints = board.getAdjacentPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
-		return movePoints.concat(board.getAdjacentDiagonalPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo));
-	}
-
-	/**
 	 * @param {NotationPoint[]} movePoints
 	 * @param {Function} nextPossibleMovementPointsFunction
 	 * @param {SkudPaiShoTile} tile
@@ -2577,7 +1776,8 @@ export class SkudPaiShoBoard {
 						adjacentPoint.setMoveDistanceRemaining(movementInfo, 0);
 					}
 
-					if (self.tileCanMoveOntoPoint(tile, movementInfo, adjacentPoint, recentPoint, originPoint)) {
+					if (self.canMoveTileToPoint(tile.ownerName, originPoint, adjacentPoint, true)) {
+					// if (self.tileCanMoveOntoPoint(tile, movementInfo, adjacentPoint, recentPoint, originPoint)) {
 						const movementOk = self.setPointAsPossibleMovement(adjacentPoint, tile, originPoint);
 						if (movementOk) {
 							if (!adjacentPoint.hasTile() || canMoveThroughPoint) {
@@ -2610,18 +1810,6 @@ export class SkudPaiShoBoard {
 	setPointAsPossibleMovement(targetPoint, tileBeingMoved, originPoint, currentMovementPath) {
 		targetPoint.addType(POSSIBLE_MOVE);
 		return true;
-	}
-
-	/**
-	 * @param {SkudPaiShoTile} tile
-	 * @param {any} movementInfo
-	 * @param {NotationPoint} targetPoint
-	 * @param {NotationPoint} fromPoint
-	 * @param {NotationPoint} originPoint
-	 * @returns {boolean}
-	 */
-	tileCanMoveOntoPoint(tile, movementInfo, targetPoint, fromPoint, originPoint) {
-		return this.couldMoveTileToPoint(tile.ownerName, originPoint, targetPoint);
 	}
 
 	/* SkudPaiShoBoard.prototype.setPossibleMovePointsOld = function(boardPointStart) {
@@ -2687,79 +1875,55 @@ export class SkudPaiShoBoard {
 	// Misc Board Analysis Functions
 	// =========================================================
 
-	/**
-	 * Checks if player has growing flower in less than 2 gates
-	 * @param {string} player - "HOST" or "GUEST"
-	 * @returns {boolean} Count < 2
-	 */
-	playerControlsLessThanTwoGates(player) {
-		let count = 0;
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				const bp = this.cells[row][col];
-				if (bp.isType(GATE) && bp.hasTile() && bp.tile.ownerName === player) {
-					count++;
-				}
-			}
-		}
-
-		return count < 2;
-	}
+	// Define points that have gates for quick access
+	static GATES_ROW_COL = [
+		new RowAndColumn(0, 8),		// Top
+		new RowAndColumn(16, 8),	// Bottom
+		new RowAndColumn(8, 0),		// Left
+		new RowAndColumn(8, 16)		// Right
+	]
 
 	/**
 	 * Checks if player has no growing flowers in gates
 	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {boolean} allowOneGrowingFlower - Used to allow bonus plant when controlling only one gate with "newGatesRule" enabled
 	 * @returns {boolean}
 	 */
-	playerHasNoGrowingFlowers(player) {
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				const bp = this.cells[row][col];
-				if (bp.isType(GATE) && bp.hasTile() && bp.tile.ownerName === player) {
-					return false;
-				}
+	playerHasNoGrowingFlowers(player, allowOneGrowingFlower = false) {
+		const allowedCount = allowOneGrowingFlower ? 1 : 0;
+
+		let count = 0;
+		for (const gateRowCol of SkudPaiShoBoard.GATES_ROW_COL) {
+			const bp = this.cells[gateRowCol.row][gateRowCol.col];
+			if (bp.hasTile() && bp.tile.ownerName === player) {
+				count++;
 			}
+			if (count > allowedCount) return false;
 		}
 
 		return true;
 	}
 
 	/**
-	 * Add POSSIBLE_MOVE type to all open gate points
+	 * Add POSSIBLE_MOVE type to all possible plant points with "newSpecialFlowerRules" enabled
 	 * @param {string} player - "HOST" or "GUEST"
 	 */
 	revealSpecialFlowerPlacementPoints(player) {
-		// Check each Gate for tile belonging to player, then check gate edge points
+		// Check each Gate for tile belonging to player, then add POSSIBLE_MOVE to open gate edge points
 		const bpCheckList = [];
+		for (const gateRowCol of SkudPaiShoBoard.GATES_ROW_COL) {
+			const bp = this.cells[gateRowCol.row][gateRowCol.col];
+			if (!bp.hasTile() || bp.tile.ownerName !== player) continue;
 
-		let row = 0;
-		let col = 8;
-		let bp = this.cells[row][col];
-		if (bp.hasTile() && bp.tile.ownerName === player) {
-			bpCheckList.push(this.cells[row][col - 1]);
-			bpCheckList.push(this.cells[row][col + 1]);
-		}
-
-		row = 16;
-		bp = this.cells[row][col];
-		if (bp.hasTile() && bp.tile.ownerName === player) {
-			bpCheckList.push(this.cells[row][col - 1]);
-			bpCheckList.push(this.cells[row][col + 1]);
-		}
-
-		row = 8;
-		col = 0;
-		bp = this.cells[row][col];
-		if (bp.hasTile() && bp.tile.ownerName === player) {
-			bpCheckList.push(this.cells[row - 1][col]);
-			bpCheckList.push(this.cells[row + 1][col]);
-		}
-
-		col = 16;
-		bp = this.cells[row][col];
-		if (bp.hasTile() && bp.tile.ownerName === player) {
-			bpCheckList.push(this.cells[row - 1][col]);
-			bpCheckList.push(this.cells[row + 1][col]);
+			// On top or bottom
+			if (gateRowCol.col === 8) {
+				bpCheckList.push(this.cells[gateRowCol.row][gateRowCol.col - 1]);
+				bpCheckList.push(this.cells[gateRowCol.row][gateRowCol.col + 1]);
+			// On left or right
+			} else {
+				bpCheckList.push(this.cells[gateRowCol.row - 1][gateRowCol.col]);
+				bpCheckList.push(this.cells[gateRowCol.row + 1][gateRowCol.col]);
+			}
 		}
 
 		bpCheckList.forEach(function(bp) {
@@ -2770,13 +1934,12 @@ export class SkudPaiShoBoard {
 	}
 
 	/**
-	 * Add POSSIBLE_MOVE type to gate nearest to guest if open
+	 * Add POSSIBLE_MOVE type to gate nearest to guest if open (used for opening move)
 	 */
 	setGuestGateOpen() {
-		const row = 16;
-		const col = 8;
-		if (this.cells[row][col].isOpenGate()) {
-			this.cells[row][col].addType(POSSIBLE_MOVE);
+		const bp = this.cells[16][8];
+		if (bp.isOpenGate()) {
+			bp.addType(POSSIBLE_MOVE);
 		}
 	}
 
@@ -2789,8 +1952,6 @@ export class SkudPaiShoBoard {
 
 		this.cells.forEach(function(row) {
 			row.forEach(function(boardPoint) {
-				let valid = false;
-
 				if (
 					(tile.accentType === ROCK && self.canPlaceRock(boardPoint))
 					|| (tile.accentType === WHEEL && self.canPlaceWheel(boardPoint))
@@ -2800,10 +1961,6 @@ export class SkudPaiShoBoard {
 					|| (tile.accentType === POND && self.canPlacePond(boardPoint, tile))
 					|| (tile.accentType === LION_TURTLE && self.canPlaceLionTurtle(boardPoint, tile))
 				) {
-					valid = true;
-				}
-
-				if (valid) {
 					boardPoint.addType(POSSIBLE_MOVE);
 				}
 			});
@@ -2815,9 +1972,7 @@ export class SkudPaiShoBoard {
 	 * @param {SkudPaiShoBoardPoint} boardPoint
 	 */
 	revealBoatBonusPoints(boardPoint) {
-		if (!boardPoint.hasTile()) {
-			return;
-		}
+		if (!boardPoint.hasTile()) return;
 
 		const player = boardPoint.tile.ownerName;
 
@@ -2825,8 +1980,8 @@ export class SkudPaiShoBoard {
 			// New rules: All surrounding points
 			const rowCols = this.getSurroundingRowAndCols(boardPoint);
 
-			for (let i = 0; i < rowCols.length; i++) {
-				const boardPointEnd = this.cells[rowCols[i].row][rowCols[i].col];
+			for (const rowCol of rowCols) {
+				const boardPointEnd = this.cells[rowCol.row][rowCol.col];
 				if (this.canTransportTileToPointWithBoat(boardPoint, boardPointEnd)) {
 					boardPointEnd.addType(POSSIBLE_MOVE);
 				}
@@ -2873,6 +2028,10 @@ export class SkudPaiShoBoard {
 		return copyBoard;
 	}
 
+	// =========================================================
+	// AI Player Board Analysis Functions
+	// =========================================================
+
 	/**
 	 * Number of basic flower tiles owned by player that are in their color's garden
 	 * @param {string} player - "HOST" or "GUEST"
@@ -2880,32 +2039,26 @@ export class SkudPaiShoBoard {
 	 */
 	numTilesInGardensForPlayer(player) {
 		let count = 0;
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				const bp = this.cells[row][col];
-				if (bp.types.length === 1 && bp.hasTile()) {
-					if (bp.isType(bp.tile.basicColorName)) {
-						count++;
-					}
-				}
+		for (const cellRow of this.cells) {
+			for (const bp of cellRow) {
+				if (bp.hasTile() && bp.types.length === 1 && bp.isType(bp.tile.basicColorName)) continue;
+				count++;
 			}
 		}
 		return count;
 	}
 
 	/**
-	 * Number of tiles of any type on the board owned by player
+	 * Number of tiles of on the board owned by player
 	 * @param {string} player - "HOST" or "GUEST"
 	 * @returns {number} Tile Count
 	 */
 	numTilesOnBoardForPlayer(player) {
 		let count = 0;
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				const bp = this.cells[row][col];
-				if (bp.hasTile() && bp.tile.ownerName === player) {
-					count++;
-				}
+		for (const cellRow of this.cells) {
+			for (const bp of cellRow) {
+				if (!bp.hasTile() || !bp.tile.ownerName === player) continue;
+				count++;
 			}
 		}
 		return count;
@@ -2948,18 +2101,8 @@ export class SkudPaiShoBoard {
 				}
 			}
 		}
-		// Get lowest...
-		let lowest = up;
-		if (down < lowest) {
-			lowest = down;
-		}
-		if (left < lowest) {
-			lowest = left;
-		}
-		if (right < lowest) {
-			lowest = right;
-		}
 
+		const lowest = Math.min(up, down, left, right);
 		if (lowest === 0) {
 			return hasUp + hasDown + hasLeft + hasRight;
 		} else {
