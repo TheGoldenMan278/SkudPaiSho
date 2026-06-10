@@ -96,7 +96,11 @@ export class SkudPaiShoGameManager {
 
 		let errorFound = false;
 		/** @type {MoveResults} */
-		let moveResults = null;
+		let moveResults = {
+			bonusAllowed: false,
+			movedTile: null,
+			capturedTile: null
+		};
 
 		if (move.moveNum === 0 && move.accentTiles) {
 			const self = this;
