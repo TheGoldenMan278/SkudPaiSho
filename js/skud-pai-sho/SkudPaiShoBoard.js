@@ -114,13 +114,19 @@ export class SkudPaiShoBoard {
 				let thisCell = new SkudPaiShoBoardPoint();
 
 				// Add relevant types to SkudPaiShoBoardPoint
+				if (cellPointType === 0) {
+					thisCell.addType(NON_PLAYABLE);
+				}
 				if (cellPointType === 1) {
 					thisCell.addType(GATE);
-				} else if (cellPointType === 2 || cellPointType === 6 || cellPointType === 7 || cellPointType === 8) {
+				}
+				if (cellPointType === 2 || cellPointType === 6 || cellPointType === 7 || cellPointType === 8) {
 					thisCell.addType(NEUTRAL);
-				} else if (cellPointType === 4 || cellPointType === 5 || cellPointType === 7 || cellPointType === 8) {
+				}
+				if (cellPointType === 4 || cellPointType === 5 || cellPointType === 7 || cellPointType === 8) {
 					thisCell.addType(WHITE);
-				} else if (cellPointType === 3 || cellPointType === 5 || cellPointType === 6 || cellPointType === 8) {
+				}
+				if (cellPointType === 3 || cellPointType === 5 || cellPointType === 6 || cellPointType === 8) {
 					thisCell.addType(RED);
 				}
 
@@ -381,7 +387,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceBoat(boardPoint, tile) {
-		if (!this.canPlaceAccent(boardPoint)) return false;
+		if (!boardPoint.hasTile() || boardPoint.isType(GATE)) return false; // Boat must always be played over another tile
 
 		if (boardPoint.tile.type === ACCENT_TILE && !boatOnlyMoves) {
 			if (boardPoint.tile.accentType !== KNOTWEED && !simplest && !rocksUnwheelable) {
@@ -786,8 +792,8 @@ export class SkudPaiShoBoard {
 		for (let row = rowAndCol.row - 1; row <= rowAndCol.row + 1; row++) {
 			for (let col = rowAndCol.col - 1; col <= rowAndCol.col + 1; col++) {
 				if (row === rowAndCol.row && col === rowAndCol.col) continue;	// Skip given center point
-				if (row >= 0 || col >= 0 || row < 17 || col < 17) continue;	// Skip points outside range of the grid
-				console.log(row, col);
+				if (row < 0 || col < 0 || row >= 17 || col >= 17) continue;	// Skip points outside range of the grid
+
 				const boardPoint = this.cells[row][col];
 				if (boardPoint.isType(NON_PLAYABLE)) continue;	// Skip non-playable points
 
@@ -1953,13 +1959,13 @@ export class SkudPaiShoBoard {
 		this.cells.forEach(function(row) {
 			row.forEach(function(boardPoint) {
 				if (
-					(tile.accentType === ROCK && self.canPlaceRock(boardPoint))
+					(tile.accentType === ROCK && self.canPlaceAccent(boardPoint))
 					|| (tile.accentType === WHEEL && self.canPlaceWheel(boardPoint))
 					|| (tile.accentType === KNOTWEED && self.canPlaceKnotweed(boardPoint))
 					|| (tile.accentType === BOAT && self.canPlaceBoat(boardPoint, tile))
 					|| (tile.accentType === BAMBOO && self.canPlaceBamboo(boardPoint, tile))
-					|| (tile.accentType === POND && self.canPlacePond(boardPoint, tile))
-					|| (tile.accentType === LION_TURTLE && self.canPlaceLionTurtle(boardPoint, tile))
+					|| (tile.accentType === POND && self.canPlaceAccent(boardPoint, tile))
+					|| (tile.accentType === LION_TURTLE && self.canPlaceAccent(boardPoint, tile))
 				) {
 					boardPoint.addType(POSSIBLE_MOVE);
 				}
