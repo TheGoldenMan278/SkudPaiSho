@@ -1569,269 +1569,87 @@ export class SkudPaiShoBoard {
 	}
 
 	// =========================================================
-	// Movement Functions
+	// Possible Move Generation Functions
 	// =========================================================
 
 	/**
-	 * Get points adjacent to pointAlongTheWay that are movable from originPoint
-	 * @param {NotationPoint} pointAlongTheWay
-	 * @param {NotationPoint} originPoint
-	 * @param {boolean} mustPreserveDirection
-	 * @param {any} movementInfo - Unused
-	 * @returns {NotationPoint[]}
-	 */
-	getAdjacentPointsPotentialPossibleMoves(pointAlongTheWay, originPoint, mustPreserveDirection, movementInfo) {
-		const potentialMovePoints = [];
-
-		if (!pointAlongTheWay) {
-			pointAlongTheWay = originPoint;
-		}
-		const rowDifference = originPoint.row - pointAlongTheWay.row;
-		const colDifference = originPoint.col - pointAlongTheWay.col;
-
-		if (pointAlongTheWay.row > 0) {
-			potentialMovePoints.push(this.cells[pointAlongTheWay.row - 1][pointAlongTheWay.col]);
-		}
-		if (pointAlongTheWay.row < paiShoBoardMaxRowOrCol) {
-			potentialMovePoints.push(this.cells[pointAlongTheWay.row + 1][pointAlongTheWay.col]);
-		}
-		if (pointAlongTheWay.col > 0) {
-			potentialMovePoints.push(this.cells[pointAlongTheWay.row][pointAlongTheWay.col - 1]);
-		}
-		if (pointAlongTheWay.col < paiShoBoardMaxRowOrCol) {
-			potentialMovePoints.push(this.cells[pointAlongTheWay.row][pointAlongTheWay.col + 1]);
-		}
-
-		const finalPoints = [];
-
-		potentialMovePoints.forEach(function(potentialMovePoint) {
-			if (!potentialMovePoint.isType(NON_PLAYABLE)) {
-				const newRowDiff = originPoint.row - potentialMovePoint.row;
-				const newColDiff = originPoint.col - potentialMovePoint.col;
-				if (!mustPreserveDirection
-					|| (rowDifference >= 0 && newRowDiff >= 0 && newColDiff === 0)
-					|| (rowDifference <= 0 && newRowDiff <= 0 && newColDiff === 0)
-					|| (colDifference >= 0 && newColDiff >= 0 && newRowDiff === 0)
-					|| (colDifference <= 0 && newColDiff <= 0 && newRowDiff === 0)
-				) {
-					finalPoints.push(potentialMovePoint);
-				}
-			}
-		});
-
-		return finalPoints;
-	}
-
-	/**
-	 * Get points diagonal to pointAlongTheWay that are movable from originPoint
-	 * @param {NotationPoint} pointAlongTheWay
-	 * @param {NotationPoint} originPoint
-	 * @param {boolean} mustPreserveDirection
-	 * @param {any} movementInfo - Unused
-	 * @returns {NotationPoint[]}
-	 */
-	getAdjacentDiagonalPointsPotentialPossibleMoves(pointAlongTheWay, originPoint, mustPreserveDirection, movementInfo) {
-		const diagonalPoints = [];
-
-		if (!pointAlongTheWay) {
-			pointAlongTheWay = originPoint;
-		}
-		const rowDifference = originPoint.row - pointAlongTheWay.row;
-		const colDifference = originPoint.col - pointAlongTheWay.col;
-
-		if (
-			(!mustPreserveDirection || (mustPreserveDirection && rowDifference >= 0 && colDifference >= 0))
-			&& (pointAlongTheWay.row > 0 && pointAlongTheWay.col > 0)
-		) {
-			const adjacentPoint = this.cells[pointAlongTheWay.row - 1][pointAlongTheWay.col - 1];
-			if (!adjacentPoint.isType(NON_PLAYABLE)) {
-				diagonalPoints.push(adjacentPoint);
-			}
-		}
-		if (
-			(!mustPreserveDirection || (mustPreserveDirection && rowDifference <= 0 && colDifference <= 0))
-			&& (pointAlongTheWay.row < paiShoBoardMaxRowOrCol && pointAlongTheWay.col < paiShoBoardMaxRowOrCol)
-		) {
-			const adjacentPoint = this.cells[pointAlongTheWay.row + 1][pointAlongTheWay.col + 1];
-			if (!adjacentPoint.isType(NON_PLAYABLE)) {
-				diagonalPoints.push(adjacentPoint);
-			}
-		}
-		if (
-			(!mustPreserveDirection || (mustPreserveDirection && colDifference >= 0 && rowDifference <= 0))
-			&& (pointAlongTheWay.col > 0 && pointAlongTheWay.row < paiShoBoardMaxRowOrCol)
-		) {
-			const adjacentPoint = this.cells[pointAlongTheWay.row + 1][pointAlongTheWay.col - 1];
-			if (!adjacentPoint.isType(NON_PLAYABLE)) {
-				diagonalPoints.push(adjacentPoint);
-			}
-		}
-		if (
-			(!mustPreserveDirection || (mustPreserveDirection && colDifference <= 0 && rowDifference >= 0))
-			&& (pointAlongTheWay.col < paiShoBoardMaxRowOrCol && pointAlongTheWay.row > 0)
-		) {
-			const adjacentPoint = this.cells[pointAlongTheWay.row - 1][pointAlongTheWay.col + 1];
-			if (!adjacentPoint.isType(NON_PLAYABLE)) {
-				diagonalPoints.push(adjacentPoint);
-			}
-		}
-
-		return diagonalPoints;
-	}
-
-	/**
-	 * Checks if tile can move through targetPoint
-	 * @param {SkudPaiShoTile} tile - Unused
-	 * @param {any} movementInfo - Unused
-	 * @param {SkudPaiShoBoardPoint} targetPoint
-	 * @param {SkudPaiShoBoardPoint} fromPoint - Unused
-	 * @returns {boolean}
-	 */
-	tileCanMoveThroughPoint(tile, movementInfo, targetPoint, fromPoint) {
-		// Can also check anything else that restricts tile movement through spaces on the board
-		return !targetPoint.hasTile();
-	}
-
-	/**
-	 * Check if boardPoint distance remaining is >= distanceRemaining
-	 * @param {SkudPaiShoBoardPoint} boardPoint
-	 * @param {number} distanceRemaining
-	 * @param {any} movementInfo - Unused
-	 * @returns {boolean}
-	 */
-	canMoveHereMoreEfficientlyAlready(boardPoint, distanceRemaining, movementInfo) {
-		return boardPoint.getMoveDistanceRemaining(movementInfo) >= distanceRemaining;
-	}
-
-	/**
-	 * Add POSSIBLE_MOVE type to eligible SkudPaiShoBoardPoints
-	 * @param {SkudPaiShoBoardPoint} boardPointStart
+	 * Add POSSIBLE_MOVE type to all SkudPaiShoBoardPoints that are legal moves for the tile on boardPointStart 
+	 * @param {SkudPaiShoBoardPoint} boardPointStart - GameManger checks that it has a tile
 	 */
 	setPossibleMovePoints(boardPointStart) {
-		if (boardPointStart.hasTile()) {
-			this.setPossibleMovesForMovement({ distance: boardPointStart.tile.getMoveDistance() }, boardPointStart);
-		}
+		const allowedMoveDistance = boardPointStart.tile.getMoveDistance();
+
+		this.setPossibleMovementPointsFromMovePoints([boardPointStart], boardPointStart.tile, boardPointStart, allowedMoveDistance);
 	}
 
 	/**
-	 * @param {any} movementInfo
-	 * @param {SkudPaiShoBoardPoint} boardPointStart
+	 * Get points adjacent to pointAlongTheWay that are movable from originPoint and within the board
+	 * @param {NotationPoint} pointAlongTheWay
+	 * @param {NotationPoint} originPoint
+	 * @returns {NotationPoint[]}
 	 */
-	setPossibleMovesForMovement(movementInfo, boardPointStart) {
+	getAdjacentPointsPotentialPossibleMoves(pointAlongTheWay, originPoint) {
+		const potentialMovePoints = [];
+		pointAlongTheWay = pointAlongTheWay ? pointAlongTheWay : originPoint;
+		
+		let possibleMoveOffsets = DIRECTIONS;
 		if (gameOptionEnabled(DIAGONAL_MOVEMENT)) {
-			this.setPossibleMovementPointsFromMovePoints([boardPointStart], SkudPaiShoBoard.diagonalMovementFunction, boardPointStart.tile, movementInfo, boardPointStart, movementInfo.distance, 0);
-		} else {
-			this.setPossibleMovementPointsFromMovePoints([boardPointStart], SkudPaiShoBoard.standardMovementFunction, boardPointStart.tile, movementInfo, boardPointStart, movementInfo.distance, 0);
+			possibleMoveOffsets = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
 		}
+		
+		possibleMoveOffsets.forEach((possibleMoveOffset) => {
+			const possibleRow = pointAlongTheWay.row + possibleMoveOffset[0];
+			const possibleCol = pointAlongTheWay.col + possibleMoveOffset[1];
+			if (possibleRow <= 0 || possibleRow > 16 || possibleCol <= 0 || possibleCol >= 16) return;
+
+			let potentialMovePoint = this.cells[possibleRow][possibleCol];
+			if (potentialMovePoint.isType(NON_PLAYABLE)) return;
+
+			potentialMovePoints.push(potentialMovePoint);
+		});
+
+		return potentialMovePoints;
 	}
 
 	/**
-	 * @param {SkudPaiShoBoard} board
-	 * @param {SkudPaiShoBoardPoint} originPoint
-	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
-	 * @param {any} movementInfo
-	 * @param {number} moveStepNumber - Unused
-	 * @returns {NotationPoint[]}
-	 */
-	static standardMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
-		const mustPreserveDirection = false;	// True means the tile couldn't turn as it goes
-		return board.getAdjacentPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
-	}
-
-	/**
-	 * @param {SkudPaiShoBoard} board
-	 * @param {SkudPaiShoBoardPoint} originPoint
-	 * @param {SkudPaiShoBoardPoint} boardPointAlongTheWay
-	 * @param {any} movementInfo
-	 * @param {number} moveStepNumber - Unused
-	 * @returns {NotationPoint[]}
-	 */
-	static diagonalMovementFunction(board, originPoint, boardPointAlongTheWay, movementInfo, moveStepNumber) {
-		const mustPreserveDirection = false;
-		return board.getAdjacentDiagonalPointsPotentialPossibleMoves(boardPointAlongTheWay, originPoint, mustPreserveDirection, movementInfo);
-	}
-
-	/**
+	 * Recursive function to find all legal move points for tile
 	 * @param {NotationPoint[]} movePoints
 	 * @param {Function} nextPossibleMovementPointsFunction
 	 * @param {SkudPaiShoTile} tile
-	 * @param {any} movementInfo
 	 * @param {NotationPoint} originPoint
 	 * @param {number} distanceRemaining
-	 * @param {number} moveStepNumber
 	 */
-	setPossibleMovementPointsFromMovePoints(movePoints, nextPossibleMovementPointsFunction, tile, movementInfo, originPoint, distanceRemaining, moveStepNumber) {
-		if (distanceRemaining === 0
-			|| !movePoints
-			|| movePoints.length <= 0) {
-			return;	// Complete
+	setPossibleMovementPointsFromMovePoints(movePoints, tile, originPoint, distanceRemaining) {
+		if (distanceRemaining === 0 || movePoints.length <= 0) {
+			return;	// We are done once we either run out of movement or run out of open spaces to move to
 		}
 
-		const self = this;
 		const nextPointsConfirmed = [];
-		movePoints.forEach(function(recentPoint) {
-			const nextPossiblePoints = nextPossibleMovementPointsFunction(self, originPoint, recentPoint, movementInfo, moveStepNumber);
-			nextPossiblePoints.forEach(function(adjacentPoint) {
-				if (!self.canMoveHereMoreEfficientlyAlready(adjacentPoint, distanceRemaining, movementInfo)) {
-					adjacentPoint.setMoveDistanceRemaining(movementInfo, distanceRemaining);
+		movePoints.forEach((recentPoint) => {
+			const nextPossiblePoints = this.getAdjacentPointsPotentialPossibleMoves(recentPoint, originPoint);
+			nextPossiblePoints.forEach((adjacentPoint) => {
+				if (adjacentPoint.getMoveDistanceRemaining() >= distanceRemaining) return;
 
-					const canMoveThroughPoint = self.tileCanMoveThroughPoint(tile, movementInfo, adjacentPoint, recentPoint);
+				adjacentPoint.setMoveDistanceRemaining(distanceRemaining);
+					
+				if (!adjacentPoint.hasTile()) { // If can move through point, add it to the next round of movement checks
+					nextPointsConfirmed.push(adjacentPoint);
+				} else { // If cannot move through point, then the distance remaining is 0, none!
+					adjacentPoint.setMoveDistanceRemaining(0);
+				}
 
-					/* If cannot move through point, then the distance remaining is 0, none! */
-					if (!canMoveThroughPoint) {
-						adjacentPoint.setMoveDistanceRemaining(movementInfo, 0);
-					}
-
-					if (self.canMoveTileToPoint(tile.ownerName, originPoint, adjacentPoint, true)) {
-					// if (self.tileCanMoveOntoPoint(tile, movementInfo, adjacentPoint, recentPoint, originPoint)) {
-						const movementOk = self.setPointAsPossibleMovement(adjacentPoint, tile, originPoint);
-						if (movementOk) {
-							if (!adjacentPoint.hasTile() || canMoveThroughPoint) {
-								nextPointsConfirmed.push(adjacentPoint);
-							}
-						}
-					} else if (canMoveThroughPoint) {
-						nextPointsConfirmed.push(adjacentPoint);
-					}
+				// Check for other legal move rules such as captures before deciding if this is a legal move
+				if (this.canMoveTileToPoint(tile.ownerName, originPoint, adjacentPoint, true)) {
+					adjacentPoint.addType(POSSIBLE_MOVE);
 				}
 			});
 		});
 
 		this.setPossibleMovementPointsFromMovePoints(nextPointsConfirmed,
-			nextPossibleMovementPointsFunction,
 			tile,
-			movementInfo,
 			originPoint,
-			distanceRemaining - 1,
-			moveStepNumber + 1);
+			distanceRemaining - 1);
 	}
-
-	/**
-	 * @param {NotationPoint} targetPoint
-	 * @param {SkudPaiShoTile} tileBeingMoved
-	 * @param {NotationPoint} originPoint
-	 * @param {any} currentMovementPath
-	 * @returns {boolean}
-	 */
-	setPointAsPossibleMovement(targetPoint, tileBeingMoved, originPoint, currentMovementPath) {
-		targetPoint.addType(POSSIBLE_MOVE);
-		return true;
-	}
-
-	/* SkudPaiShoBoard.prototype.setPossibleMovePointsOld = function(boardPointStart) {
-		if (!boardPointStart.hasTile()) {
-			return;
-		}
-		// Apply "possible move point" type to applicable boardPoints
-		const player = boardPointStart.tile.ownerName;
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				if (this.canMoveTileToPoint(player, boardPointStart, this.cells[row][col])) {
-					this.cells[row][col].addType(POSSIBLE_MOVE);
-				}
-			}
-		}
-	}; */
 
 	/** Remove POSSIBLE_MOVE type from all SkudPaiShoBoardPoints */
 	removePossibleMovePoints() {
@@ -1875,39 +1693,6 @@ export class SkudPaiShoBoard {
 				}
 			}
 		}
-	}
-
-	// =========================================================
-	// Misc Board Analysis Functions
-	// =========================================================
-
-	// Define points that have gates for quick access
-	static GATES_ROW_COL = [
-		new RowAndColumn(0, 8),		// Top
-		new RowAndColumn(16, 8),	// Bottom
-		new RowAndColumn(8, 0),		// Left
-		new RowAndColumn(8, 16)		// Right
-	]
-
-	/**
-	 * Checks if player has no growing flowers in gates
-	 * @param {string} player - "HOST" or "GUEST"
-	 * @param {boolean} allowOneGrowingFlower - Used to allow bonus plant when controlling only one gate with "newGatesRule" enabled
-	 * @returns {boolean}
-	 */
-	playerHasNoGrowingFlowers(player, allowOneGrowingFlower = false) {
-		const allowedCount = allowOneGrowingFlower ? 1 : 0;
-
-		let count = 0;
-		for (const gateRowCol of SkudPaiShoBoard.GATES_ROW_COL) {
-			const bp = this.cells[gateRowCol.row][gateRowCol.col];
-			if (bp.hasTile() && bp.tile.ownerName === player) {
-				count++;
-			}
-			if (count > allowedCount) return false;
-		}
-
-		return true;
 	}
 
 	/**
@@ -2006,6 +1791,39 @@ export class SkudPaiShoBoard {
 				}
 			}
 		}
+	}
+
+	// =========================================================
+	// Misc Board Analysis Functions
+	// =========================================================
+
+	// Define points that have gates for quick access
+	static GATES_ROW_COL = [
+		new RowAndColumn(0, 8),		// Top
+		new RowAndColumn(16, 8),	// Bottom
+		new RowAndColumn(8, 0),		// Left
+		new RowAndColumn(8, 16)		// Right
+	]
+
+	/**
+	 * Checks if player has no growing flowers in gates
+	 * @param {string} player - "HOST" or "GUEST"
+	 * @param {boolean} allowOneGrowingFlower - Used to allow bonus plant when controlling only one gate with "newGatesRule" enabled
+	 * @returns {boolean}
+	 */
+	playerHasNoGrowingFlowers(player, allowOneGrowingFlower = false) {
+		const allowedCount = allowOneGrowingFlower ? 1 : 0;
+
+		let count = 0;
+		for (const gateRowCol of SkudPaiShoBoard.GATES_ROW_COL) {
+			const bp = this.cells[gateRowCol.row][gateRowCol.col];
+			if (bp.hasTile() && bp.tile.ownerName === player) {
+				count++;
+			}
+			if (count > allowedCount) return false;
+		}
+
+		return true;
 	}
 
 	/**

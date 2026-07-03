@@ -58,13 +58,12 @@ export function addPlantMoves(moves, game, player, moveNum) {
 
 	const tilePile = getTilePile(game, player);
 	let plantTypesAnalyzed = new Set();
-	let moveSet = new Set();
 
 	// For each tile in player's tile reserve ("tile pile"), build Planting moves
 	for (const tile of tilePile) {
 		if (tile.type !== BASIC_FLOWER) continue;
 
-		// Only need to look at planting each tile type once because moves will be the same for each
+		// Only need to look at planting each basic flower tile type once because moves will be the same for each
 		if (plantTypesAnalyzed.has(tile.code)) continue;
 		plantTypesAnalyzed.add(tile.code);
 

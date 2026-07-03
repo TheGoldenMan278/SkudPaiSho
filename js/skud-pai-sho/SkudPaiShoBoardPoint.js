@@ -28,6 +28,8 @@ export class SkudPaiShoBoardPoint {
 		this.col = -1;
 		/** @type {?SkudPaiShoTile} */
 		this.tile = null;
+		/** @type {number} */
+		this.moveDistanceRemaining = -1;
 	}
 
 	// =========================================================
@@ -187,21 +189,20 @@ export class SkudPaiShoBoardPoint {
 
 	/**
 	 * Set this.moveDistanceRemaining.
-	 * @param {any} movementInfo - (Unused)
 	 * @param {any} distanceRemaining
 	 */
-	setMoveDistanceRemaining(movementInfo, distanceRemaining) {
+	setMoveDistanceRemaining(distanceRemaining) {
 		this.moveDistanceRemaining = distanceRemaining;
 	}
 
 	/** @returns {any} this.moveDistanceRemaining */
-	getMoveDistanceRemaining( /* movementInfo */) {
+	getMoveDistanceRemaining() {
 		return this.moveDistanceRemaining;
 	}
 
-	/** Sets this.moveDistanceRemaining to null. */
+	/** Sets this.moveDistanceRemaining to 0. */
 	clearPossibleMovementTypes() {
-		this.moveDistanceRemaining = null;
+		this.moveDistanceRemaining = -1;
 	}
 
 	/**
