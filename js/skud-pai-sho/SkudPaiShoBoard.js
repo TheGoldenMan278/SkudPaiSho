@@ -1738,7 +1738,7 @@ export class SkudPaiShoBoard {
 	 * Add POSSIBLE_MOVE type to all SkudPaiShoBoardPoints where given accent tile can be placed
 	 * @param {SkudPaiShoTile} tile - Accent tile to be placed
 	 */
-	revealPossiblePlacementPoints(tile) {
+	revealPossibleAccentPlacementPoints(tile) {
 		const self = this;
 
 		this.cells.forEach(function(row) {

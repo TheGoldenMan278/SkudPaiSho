@@ -376,8 +376,8 @@ export class SkudPaiShoGameManager {
 	 * Add POSSIBLE_MOVE to all points where accent tile can be placed
 	 * @param {SkudPaiShoTile} tile - Accent tile to place
 	 */
-	revealPossiblePlacementPoints(tile) {
-		this.board.revealPossiblePlacementPoints(tile);
+	revealPossibleAccentPlacementPoints(tile) {
+		this.board.revealPossibleAccentPlacementPoints(tile);
 		this.actuate();
 	}
 

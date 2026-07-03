@@ -517,7 +517,7 @@ export class SkudPaiShoController {
 			if (tile.type === BASIC_FLOWER && this.theGame.playerCanBonusPlant(getCurrentPlayer())) {
 				this.theGame.revealOpenGates(getCurrentPlayer(), tile);
 			} else if (tile.type === ACCENT_TILE) {
-				this.theGame.revealPossiblePlacementPoints(tile);
+				this.theGame.revealPossibleAccentPlacementPoints(tile);
 			} else if (tile.type === SPECIAL_FLOWER) {
 				if (!specialFlowerLimitedRule
 					|| (specialFlowerLimitedRule && this.theGame.playerCanBonusPlant(getCurrentPlayer()))) {
