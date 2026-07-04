@@ -291,16 +291,17 @@ export class SkudPaiShoGameManager {
 	 * Set POSSIBLE_MOVE for all SkudPaiShoBoardPoints where tile in given boardPoint can move
 	 * @param {SkudPaiShoBoardPoint} boardPoint
 	 * @param {boolean} ignoreActuate - Don't reflect valid move points in visual
+	 * @returns {SkudPaiShoBoardPoint[]} Legal moves
 	 */
 	revealPossibleMovePoints(boardPoint, ignoreActuate) {
-		if (!boardPoint.hasTile()) {
-			return;
-		}
-		this.board.setPossibleMovePoints(boardPoint);
+		if (!boardPoint.hasTile()) return; // Can't move if start point has to tile
+
+		const legalMoves = this.board.setPossibleMovePoints(boardPoint);
 
 		if (!ignoreActuate) {
 			this.actuate();
 		}
+		return legalMoves;
 	}
 
 	/**
@@ -322,18 +323,21 @@ export class SkudPaiShoGameManager {
 	 * @param {SkudPaiShoTile} tile - Tile to plant
 	 * @param {number} moveNum
 	 * @param {boolean} ignoreActuate - Don't open gates in visual
+	 * @returns {SkudPaiShoBoardPoint[]} Legal moves
 	 */
 	revealOpenGates(player, tile, moveNum, ignoreActuate) {
+		let legalMoves;
 		if (!gameOptionEnabled(OPTION_INFORMAL_START) && moveNum === 2) {
 			// guest selecting first tile
-			this.board.setGuestGateOpen();
+			legalMoves = this.board.setGuestGateOpen();
 		} else {
-			this.board.setOpenGatePossibleMoves(player, tile);
+			legalMoves = this.board.setOpenGatePossibleMoves(player, tile);
 		}
 
 		if (!ignoreActuate) {
 			this.actuate();
 		}
+		return legalMoves;
 	}
 
 	/**

@@ -73,8 +73,11 @@ export class SkudPaiShoBoard {
 
 		this.harmonyManager = new SkudPaiShoHarmonyManager();
 
+		this.pondHasBeenPlaced = false; // TODO: Replace with more efficient method of tracking ponds
 		this.rockRowAndCols = [];
 		this.playedWhiteLotusTiles = [];
+		/** @type {SkudPaiShoBoardPoint[]} */
+		this.legalMoves = [];
 		this.winners = [];
 	}
 
@@ -566,6 +569,7 @@ export class SkudPaiShoBoard {
 
 		// Place tile
 		boardPoint.putTile(tile);
+		this.pondHasBeenPlaced = true;
 	}
 
 	/**
@@ -1573,20 +1577,32 @@ export class SkudPaiShoBoard {
 	// =========================================================
 
 	/**
+	 * Add POSSIBLE_MOVE type to boardPoint and add to this.legalMoves 
+	 * @param {SkudPaiShoBoardPoint} boardPoint
+	 */
+	addPossibleMove(boardPoint) {
+		boardPoint.addType(POSSIBLE_MOVE);
+		this.legalMoves.push(boardPoint);
+	}
+
+	/**
 	 * Add POSSIBLE_MOVE type to all SkudPaiShoBoardPoints that are legal moves for the tile on boardPointStart 
 	 * @param {SkudPaiShoBoardPoint} boardPointStart - GameManger checks that it has a tile
+	 * @returns {SkudPaiShoBoardPoint[]} Legal moves
 	 */
 	setPossibleMovePoints(boardPointStart) {
+		this.legalMoves = [];
 		const allowedMoveDistance = boardPointStart.tile.getMoveDistance();
 
 		this.setPossibleMovementPointsFromMovePoints([boardPointStart], boardPointStart.tile, boardPointStart, allowedMoveDistance);
+		return this.legalMoves;
 	}
 
 	/**
 	 * Get points adjacent to pointAlongTheWay that are movable from originPoint and within the board
-	 * @param {NotationPoint} pointAlongTheWay
-	 * @param {NotationPoint} originPoint
-	 * @returns {NotationPoint[]}
+	 * @param {SkudPaiShoBoardPoint} pointAlongTheWay
+	 * @param {SkudPaiShoBoardPoint} originPoint
+	 * @returns {SkudPaiShoBoardPoint[]}
 	 */
 	getAdjacentPointsPotentialPossibleMoves(pointAlongTheWay, originPoint) {
 		const potentialMovePoints = [];
@@ -1613,10 +1629,9 @@ export class SkudPaiShoBoard {
 
 	/**
 	 * Recursive function to find all legal move points for tile
-	 * @param {NotationPoint[]} movePoints
-	 * @param {Function} nextPossibleMovementPointsFunction
+	 * @param {SkudPaiShoBoardPoint[]} movePoints
 	 * @param {SkudPaiShoTile} tile
-	 * @param {NotationPoint} originPoint
+	 * @param {SkudPaiShoBoardPoint} originPoint
 	 * @param {number} distanceRemaining
 	 */
 	setPossibleMovementPointsFromMovePoints(movePoints, tile, originPoint, distanceRemaining) {
@@ -1640,7 +1655,7 @@ export class SkudPaiShoBoard {
 
 				// Check for other legal move rules such as captures before deciding if this is a legal move
 				if (this.canMoveTileToPoint(tile.ownerName, originPoint, adjacentPoint, true)) {
-					adjacentPoint.addType(POSSIBLE_MOVE);
+					this.addPossibleMove(adjacentPoint);
 				}
 			});
 		});
@@ -1665,16 +1680,20 @@ export class SkudPaiShoBoard {
 	 * Add POSSIBLE_MOVE type to open gates
 	 * @param {string} player - "HOST" or "GUEST"
 	 * @param {SkudPaiShoTile} tile - Optional address special rules for pond accent tile
+	 * @returns {SkudPaiShoBoardPoint[]} Legal moves
 	 */
 	setOpenGatePossibleMoves(player, tile) {
-		// Apply "open gate" type to applicable boardPoints
+		this.legalMoves = [];
+		for (const gateRowCol of SkudPaiShoBoard.GATES_ROW_COL) {
+			const bp = this.cells[gateRowCol.row][gateRowCol.col];
+			if (!bp.isOpenGate()) continue;
+
+			this.addPossibleMove(bp);
+		}
+		if (!this.pondHasBeenPlaced) return this.legalMoves;
+
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
-				const bp = this.cells[row][col];
-				if (bp.isOpenGate()) {
-					this.cells[row][col].addType(POSSIBLE_MOVE);
-				}
-
 				// If Pond, mark surrounding points
 				if (tile && bp.hasTile() && bp.tile.accentType === POND) {
 					const rowCols = this.getSurroundingRowAndCols(bp);
@@ -1693,6 +1712,7 @@ export class SkudPaiShoBoard {
 				}
 			}
 		}
+		return this.legalMoves;
 	}
 
 	/**
@@ -1726,12 +1746,15 @@ export class SkudPaiShoBoard {
 
 	/**
 	 * Add POSSIBLE_MOVE type to gate nearest to guest if open (used for opening move)
+	 * @returns {SkudPaiShoBoardPoint[]} Legal moves
 	 */
 	setGuestGateOpen() {
+		this.legalMoves = [];
 		const bp = this.cells[16][8];
 		if (bp.isOpenGate()) {
-			bp.addType(POSSIBLE_MOVE);
+			this.addPossibleMove(bp);
 		}
+		return this.legalMoves;
 	}
 
 	/**

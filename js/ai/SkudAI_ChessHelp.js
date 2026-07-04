@@ -69,8 +69,8 @@ export function addPlantMoves(moves, game, player, moveNum) {
 
 		// For each basic flower get possible plant points
 		const convertedMoveNum = moveNum * 2;
-		game.revealOpenGates(player, tile, convertedMoveNum, true);
-		const endPoints = getPossibleMovePoints(game);
+		const endPoints = game.revealOpenGates(player, tile, convertedMoveNum, true);
+		game.hidePossibleMovePoints(true);
 
 		for (const endPoint of endPoints) {
 			let notationBuilder = new SkudPaiShoNotationBuilder();
@@ -83,7 +83,6 @@ export function addPlantMoves(moves, game, player, moveNum) {
 			let move = notationBuilder.getNotationMove(moveNum, player);
 			moves.push(move);
 
-			game.hidePossibleMovePoints(true);
 		}
 	}
 };
@@ -99,9 +98,8 @@ export function addArrangeMoves(moves, game, player, moveNum) {
 	const startPoints = getStartPoints(game, player);
 
 	for (const startPoint of startPoints) {
-		game.revealPossibleMovePoints(startPoint, true);
-
-		const endPoints = getPossibleMovePoints(game);
+		const endPoints = game.revealPossibleMovePoints(startPoint, true);
+		game.hidePossibleMovePoints(true);
 
 		for (const endPoint of endPoints) {
 			let notationBuilder = new SkudPaiShoNotationBuilder();
@@ -113,7 +111,6 @@ export function addArrangeMoves(moves, game, player, moveNum) {
 			let move = notationBuilder.getNotationMove(moveNum, player);
 			moves.push(move);
 
-			game.hidePossibleMovePoints(true);
 		}
 	}
 };
