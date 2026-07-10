@@ -52,10 +52,9 @@ export function getPossibleMoves(game, player, moveNum) {
  * @param {number} moveNum
  */
 export function addPlantMoves(moves, game, player, moveNum) {
-	if (!isOpenGate(game)) {
-		return;
-	}
+	if (!isOpenGate(game)) return;
 
+	const convertedMoveNum = moveNum * 2;
 	const tilePile = getTilePile(game, player);
 	let plantTypesAnalyzed = new Set();
 
@@ -68,12 +67,7 @@ export function addPlantMoves(moves, game, player, moveNum) {
 		plantTypesAnalyzed.add(tile.code);
 
 		// For each basic flower get possible plant points
-		const convertedMoveNum = moveNum * 2;
 		const endPoints = game.revealOpenGates(player, tile, convertedMoveNum, true);
-		endPoints.forEach(function(bp) {
-			bp.removeType(POSSIBLE_MOVE);
-			bp.clearPossibleMovementTypes();
-		});
 
 		for (const endPoint of endPoints) {
 			let notationBuilder = new SkudPaiShoNotationBuilder();
@@ -85,7 +79,6 @@ export function addPlantMoves(moves, game, player, moveNum) {
 			notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
 			let move = notationBuilder.getNotationMove(moveNum, player);
 			moves.push(move);
-
 		}
 	}
 };
@@ -116,7 +109,6 @@ export function addArrangeMoves(moves, game, player, moveNum) {
 			notationBuilder.endPoint = new NotationPoint(getNotation(endPoint));
 			let move = notationBuilder.getNotationMove(moveNum, player);
 			moves.push(move);
-
 		}
 	}
 };
