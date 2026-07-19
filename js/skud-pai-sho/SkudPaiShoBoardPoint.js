@@ -105,6 +105,7 @@ export class SkudPaiShoBoardPoint {
 	 */
 	putTile(tile) {
 		this.tile = tile;
+		if (tile instanceof SkudPaiShoTile) tile.bp = this;
 	}
 
 	/**
@@ -139,6 +140,7 @@ export class SkudPaiShoBoardPoint {
 	 */
 	removeTile() {
 		const theTile = this.tile;
+		if (theTile instanceof SkudPaiShoTile) theTile.bp = null;
 
 		this.tile = null;
 
@@ -225,9 +227,19 @@ export class SkudPaiShoBoardPoint {
 		// tile
 		if (this.hasTile()) {
 			copy.tile = this.tile.getCopy();
+			copy.tile.bp = this;
 		}
 
 		return copy;
+	}
+
+	/**
+	 * Checks if 2 SkudPaiShoBoardPoints are equal
+	 * @param {SkudPaiShoBoardPoint} otherBp
+	 * @returns {boolean} Are equal.
+	 */
+	equals(otherBp) {
+		return this.row === otherBp.row && this.col === otherBp.col;
 	}
 }
 

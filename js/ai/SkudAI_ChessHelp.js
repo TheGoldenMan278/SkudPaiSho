@@ -306,20 +306,21 @@ export function getNotation(boardPoint) {
  * @returns {SkudPaiShoBoardPoint[]}
  */
 export function getStartPoints(game, player) {
-	let points = [];
-	for (let row = 0; row < game.board.cells.length; row++) {
-		for (let col = 0; col < game.board.cells[row].length; col++) {
-			const startPoint = game.board.cells[row][col];
-			if (startPoint.hasTile()
-				&& startPoint.tile.ownerName === player
-				&& startPoint.tile.type !== ACCENT_TILE
-				&& !(startPoint.tile.drained || startPoint.tile.trapped)) {
-				
-				points.push(game.board.cells[row][col]);
-			}
+	let startPoints = [];
+	const tiles = player === HOST ? game.tileManager.hostPlayedTiles : game.tileManager.guestPlayedTiles;
+
+	for (const tile of tiles) {
+		if (tile.ownerName === player
+			&& tile.type !== ACCENT_TILE
+			&& !(tile.drained || tile.trapped)) {
+				if (tile.bp === null || !tile.bp.hasTile) {
+					console.error("Inavalid start point stored in tileManager.host/guestPlayedTiles.");
+				}
+				startPoints.push(tile.bp);
 		}
 	}
-	return points;
+
+	return startPoints;
 };
 
 /**
@@ -329,4 +330,31 @@ export function getStartPoints(game, player) {
  */
 export function getOpponent(player) {
 	return player === GUEST ? HOST : GUEST;
+};
+
+// =========================================================
+// DEBUG FUNCTIONS
+// =========================================================
+
+/**
+ * Checks for equality between 2 array containing custom class objects
+ * Note: Custom Classes must implement "equals" method
+ * @param {any[]} arr1
+ * @param {any[]} arr2
+ * @returns {boolean} Are equal
+ */
+const compareCustomArrays = (arr1, arr2) => {
+  if (arr1.length !== arr2.length) return false;
+
+  // For every item in arr1, ensure there is a matching item in arr2
+  // Create a copy of arr2 to track items we have already matched (handles duplicates)
+  const remaining = [...arr2];
+
+  return arr1.every(item1 => {
+    const matchIndex = remaining.findIndex(item2 => item1.equals(item2));
+    if (matchIndex === -1) return false;
+    
+    remaining.splice(matchIndex, 1); // Remove matched item to handle duplicates correctly
+    return true;
+  });
 };

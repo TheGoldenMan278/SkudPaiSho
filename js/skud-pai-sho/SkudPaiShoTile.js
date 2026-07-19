@@ -20,6 +20,7 @@ import {
   superHarmonies
 } from './SkudPaiShoRules';
 import { GUEST, HOST } from "../CommonNotationObjects";
+import { SkudPaiShoBoardPoint } from './SkudPaiShoBoardPoint';
 
 export var RED = "Red";
 export var WHITE = "White";
@@ -44,6 +45,7 @@ export function tileIdIncrement() {
  * @property {string} basicColorCode - "R" or "W": Red or White for Basic Flowers
  * @property {string} basicValue - "1", "2", or "3": Movement amount for Basic Flowers
  * @property {string} basicColorName - "RED" or "WHITE" for Basic Flowers
+ * @property {SkudPaiShoBoardPoint?} bp - Position of tile if it is placed and not captured
  */
 export class SkudPaiShoTile {
 	/**
@@ -83,6 +85,8 @@ export class SkudPaiShoTile {
 		} else {
 			debug("Error: Unknown tile type");
 		}
+		/** @type {SkudPaiShoBoardPoint?} */
+		this.bp = null;
 	}
 
 	/** Set this.accentType based on this.code */

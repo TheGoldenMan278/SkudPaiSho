@@ -111,7 +111,7 @@ export class SkudPaiShoGameManager {
 					allAccentCodes.splice(i, 1);
 				}
 			});
-			allAccentCodes.forEach(function(tileCode) {
+			allAccentCodes.forEach(function(tileCode) { // Remove accent tiles that weren't chosen from tile pile
 				self.tileManager.grabTile(move.player, tileCode);
 			});
 			self.tileManager.unselectTiles(move.player);
@@ -140,6 +140,7 @@ export class SkudPaiShoGameManager {
 			moveResults = this.board.moveTile(move.player, move.startPoint, move.endPoint);
 
 			move.capturedTile = moveResults.capturedTile;
+			if (move.capturedTile instanceof SkudPaiShoTile) this.tileManager.capturedTile(move.capturedTile);
 
 			if (moveResults.bonusAllowed && move.hasHarmonyBonus()) {
 				const tile = this.tileManager.grabTile(move.player, move.bonusTileCode);
@@ -150,6 +151,7 @@ export class SkudPaiShoGameManager {
 					const placeTileResult = this.board.placeTile(tile, move.bonusEndPoint, this.tileManager);
 					if (placeTileResult && placeTileResult.tileRemovedWithBoat) {
 						move.tileRemovedWithBoat = placeTileResult.tileRemovedWithBoat;
+						if (move.tileRemovedWithBoat instanceof SkudPaiShoTile) this.tileManager.capturedTile(move.tileRemovedWithBoat);
 					}
 				}
 			} else if (!moveResults.bonusAllowed && move.hasHarmonyBonus()) {
@@ -244,6 +246,7 @@ export class SkudPaiShoGameManager {
 			// Replace captured tile if it exists
 			if (moveResults.capturedTile instanceof SkudPaiShoTile) {
 				this.board.cells[move.endPoint.rowAndColumn.row][move.endPoint.rowAndColumn.col].putTile(moveResults.capturedTile);
+				this.tileManager.playedTile(moveResults.capturedTile);
 			}
 		}
 
@@ -473,6 +476,20 @@ export class SkudPaiShoGameManager {
 		const copyGame = new SkudPaiShoGameManager(this.actuator, true, true);
 		copyGame.board = this.board.getCopy();
 		copyGame.tileManager = this.tileManager.getCopy();
+
+		// Update tile manager playedTiles arrays to point to tiles on new board
+		for (let row = 0; row < copyGame.board.cells.length; row++) {
+			for (let col = 0; col < copyGame.board.cells[row].length; col++) {
+				const bp = copyGame.board.cells[row][col];
+				if (!bp.hasTile()) continue;
+				if (bp.tile.ownerName === HOST) {
+					copyGame.tileManager.hostPlayedTiles.push(bp.tile);
+				} else if (bp.tile.ownerName === GUEST) {
+					copyGame.tileManager.guestPlayedTiles.push(bp.tile);
+				}
+			}
+		}
+
 		copyGame.lastPlayerName = this.lastPlayerName;
 		copyGame.lastMoveNum = this.lastMoveNum;
 		return copyGame;

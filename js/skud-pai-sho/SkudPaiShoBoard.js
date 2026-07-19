@@ -183,6 +183,7 @@ export class SkudPaiShoBoard {
 			}
 		}
 		// Things to do after a tile is placed
+		tileManager.playedTile(tile);
 		this.flagAllTrappedAndDrainedTiles();
 		this.analyzeHarmonies();
 
@@ -602,20 +603,30 @@ export class SkudPaiShoBoard {
 	 */
 	undoPlaceTile(endPoint, tileManager, extraBoatPoint, tileRemovedWithBoat) {
 		const tile = this.cells[endPoint.rowAndColumn.row][endPoint.rowAndColumn.col].removeTile();
+
 		// If undoing boat, may not have tile in endpoint if used to remove accent tile
-		if (tile !== null) {
-			tileManager.putTileBack(tile);
+		if (tile === null) {
+			if (tileRemovedWithBoat instanceof SkudPaiShoTile) {
+				// Restore a tile that was removed by the boat
+				this.undoPlaceBoat(null, endPoint, extraBoatPoint, tileRemovedWithBoat, tileManager);
+			}
+			// Still need to refresh flags/harmonies
+			this.flagAllTrappedAndDrainedTiles();
+			this.analyzeHarmonies();
+			return;
 		}
+
+		tileManager.putTileBack(tile); // Move tile from played to unplayed array
 
 		if (tile.type === ACCENT_TILE) {
 			if (tile.accentType === ROCK) {
-				this.undoPlaceRock(tile, notationPoint);
+				this.undoPlaceRock(tile, endPoint);
 			} else if (tile.accentType === WHEEL) {
-				this.undoPlaceWheel(tile, notationPoint);
+				this.undoPlaceWheel(tile, endPoint);
 			} else if (tile.accentType === KNOTWEED) {
-				this.undoPlaceKnotweed(tile, notationPoint);
+				this.undoPlaceKnotweed(tile, endPoint);
 			} else if (tile.accentType === BOAT) {
-				this.undoPlaceBoat(tile, notationPoint, extraBoatPoint, tileRemovedWithBoat);
+				this.undoPlaceBoat(tile, endPoint, extraBoatPoint, tileRemovedWithBoat, tileManager);
 			// TODO: Add undo functions for other accent tiles if we want AI to work on expansion
 			} else if (tile.accentType === BAMBOO) {
 				debug("AI undo moves currently doesn't work with expansion using Bamboo")
@@ -705,8 +716,9 @@ export class SkudPaiShoBoard {
 	 * @param {NotationPoint} notationPoint - Target point for boat tile
 	 * @param {NotationPoint} extraBoatPoint - Optional extra point where a boat moved a tile to
 	 * @param {SkudPaiShoTile} tileRemovedWithBoat - Optional tile removed by boat
+	 * @param {SkudPaiShoTileManager} tileManager - Needed to replace tile removed by boat to "PlayedTiles" array
 	 */
-	undoPlaceBoat(tile, notationPoint, extraBoatPoint, tileRemovedWithBoat) {
+	undoPlaceBoat(tile, notationPoint, extraBoatPoint, tileRemovedWithBoat, tileManager) {
 		// debug("Extra boat point:", extraBoatPoint);
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
@@ -719,6 +731,7 @@ export class SkudPaiShoBoard {
 			boardPoint.putTile(shiftedBoardPoint.removeTile());
 		} else if (tileRemovedWithBoat instanceof SkudPaiShoTile) {
 			boardPoint.putTile(tileRemovedWithBoat);
+			tileManager.playedTile(tileRemovedWithBoat);
 
 			const rowCols = this.getSurroundingRowAndCols(rowAndCol);
 			// "Restore" surrounding tiles
@@ -881,6 +894,7 @@ export class SkudPaiShoBoard {
 			&& !doIgnoreMoveRules) {
 			debug("Bad move bears");
 			showBadMoveModal();
+			// console.log(this.cells);
 			return false;
 		}
 
