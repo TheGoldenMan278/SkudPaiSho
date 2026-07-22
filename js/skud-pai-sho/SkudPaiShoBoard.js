@@ -1615,16 +1615,16 @@ export class SkudPaiShoBoard {
 			possibleMoveOffsets = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
 		}
 		
-		possibleMoveOffsets.forEach((possibleMoveOffset) => {
+		for (const possibleMoveOffset of possibleMoveOffsets) {
 			const possibleRow = pointAlongTheWay.row + possibleMoveOffset[0];
 			const possibleCol = pointAlongTheWay.col + possibleMoveOffset[1];
-			if (possibleRow <= 0 || possibleRow > 16 || possibleCol <= 0 || possibleCol >= 16) return;
+			if (possibleRow <= 0 || possibleRow > 16 || possibleCol <= 0 || possibleCol >= 16) continue;
 
 			let potentialMovePoint = this.cells[possibleRow][possibleCol];
-			if (potentialMovePoint.isType(NON_PLAYABLE_BIT)) return;
+			if (potentialMovePoint.isType(NON_PLAYABLE_BIT)) continue;
 
 			potentialMovePoints.push(potentialMovePoint);
-		});
+		}
 
 		return potentialMovePoints;
 	}
@@ -1642,10 +1642,10 @@ export class SkudPaiShoBoard {
 		}
 
 		const nextPointsConfirmed = [];
-		movePoints.forEach((recentPoint) => {
+		for (const recentPoint of movePoints) {
 			const nextPossiblePoints = this.getAdjacentPointsPotentialPossibleMoves(recentPoint, originPoint);
-			nextPossiblePoints.forEach((adjacentPoint) => {
-				if (adjacentPoint.getMoveDistanceRemaining() >= distanceRemaining) return;
+			for (const adjacentPoint of nextPossiblePoints) {
+				if (adjacentPoint.getMoveDistanceRemaining() >= distanceRemaining) continue;
 
 				adjacentPoint.setMoveDistanceRemaining(distanceRemaining);
 					
@@ -1659,8 +1659,8 @@ export class SkudPaiShoBoard {
 				if (this.canMoveTileToPoint(tile.ownerName, originPoint, adjacentPoint, true)) {
 					this.addPossibleMove(adjacentPoint);
 				}
-			});
-		});
+			}
+		}
 
 		this.setPossibleMovementPointsFromMovePoints(nextPointsConfirmed,
 			tile,
