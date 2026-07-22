@@ -11,10 +11,7 @@ import {
   PLANTING,
   RowAndColumn,
 } from '../CommonNotationObjects';
-import {
-  NON_PLAYABLE,
-  POSSIBLE_MOVE,
-} from '../skud-pai-sho/SkudPaiShoBoardPoint';
+import { POSSIBLE_MOVE_BIT } from '../skud-pai-sho/SkudPaiShoBoardPoint';
 import {
   SkudPaiShoNotationBuilder,
   SkudPaiShoNotationMove,
@@ -96,7 +93,7 @@ export function addArrangeMoves(moves, game, player, moveNum) {
 	for (const startPoint of startPoints) {
 		const endPoints = game.revealPossibleMovePoints(startPoint, true);
 		endPoints.forEach(function(bp) {
-			bp.removeType(POSSIBLE_MOVE);
+			bp.removeType(POSSIBLE_MOVE_BIT);
 			bp.clearPossibleMovementTypes();
 		});
 
@@ -281,7 +278,7 @@ export function getPossibleMovePoints(game) {
 	let points = [];
 	for (let row = 0; row < game.board.cells.length; row++) {
 		for (let col = 0; col < game.board.cells[row].length; col++) {
-			if (game.board.cells[row][col].isType(POSSIBLE_MOVE)) {
+			if (game.board.cells[row][col].isType(POSSIBLE_MOVE_BIT)) {
 				points.push(game.board.cells[row][col]);
 			}
 		}
@@ -306,21 +303,38 @@ export function getNotation(boardPoint) {
  * @returns {SkudPaiShoBoardPoint[]}
  */
 export function getStartPoints(game, player) {
-	let startPoints = [];
-	const tiles = player === HOST ? game.tileManager.hostPlayedTiles : game.tileManager.guestPlayedTiles;
+	//TODO: Come back to this later because it is causing weird bugs and gives only a small time save
+	// let startPoints = [];
+	// const tiles = player === HOST ? game.tileManager.hostPlayedTiles : game.tileManager.guestPlayedTiles;
 
-	for (const tile of tiles) {
-		if (tile.ownerName === player
-			&& tile.type !== ACCENT_TILE
-			&& !(tile.drained || tile.trapped)) {
-				if (tile.bp === null || !tile.bp.hasTile) {
-					console.error("Inavalid start point stored in tileManager.host/guestPlayedTiles.");
-				}
-				startPoints.push(tile.bp);
+	// for (const tile of tiles) {
+	// 	if (tile.ownerName === player
+	// 		&& tile.type !== ACCENT_TILE
+	// 		&& !(tile.drained || tile.trapped)) {
+	// 			if (tile.bp === null || !tile.bp.hasTile) {
+	// 				console.error("Inavalid start point stored in tileManager.host/guestPlayedTiles.");
+	// 			}
+	// 			startPoints.push(tile.bp);
+	// 	}
+	// }
+
+	// return startPoints;
+
+	let points = [];
+	for (let row = 0; row < game.board.cells.length; row++) {
+		for (let col = 0; col < game.board.cells[row].length; col++) {
+			const startPoint = game.board.cells[row][col];
+			if (startPoint.hasTile()
+				&& startPoint.tile.ownerName === player
+				&& startPoint.tile.type !== ACCENT_TILE
+				&& !(startPoint.tile.drained || startPoint.tile.trapped)) {
+				
+				points.push(game.board.cells[row][col]);
+			}
 		}
 	}
+	return points;
 
-	return startPoints;
 };
 
 /**

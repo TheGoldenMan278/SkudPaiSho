@@ -21,7 +21,7 @@ import {
 	PLANTING,
 	RowAndColumn,
 } from '../CommonNotationObjects';
-import { POSSIBLE_MOVE } from '../skud-pai-sho/SkudPaiShoBoardPoint';
+import { NON_PLAYABLE_BIT } from '../skud-pai-sho/SkudPaiShoBoardPoint';
 import {
 	SkudPaiShoNotationBuilder,
 	SkudPaiShoNotationMove,
@@ -451,7 +451,7 @@ SkudChessAI.prototype.countAdjacentPotential = function(game, row, col) {
 
 			var adjPoint = game.board.cells[newRow][newCol];
 			// Empty playable space = potential
-			if (!adjPoint.hasTile() && adjPoint.types && !adjPoint.types.includes('NON_PLAYABLE')) {
+			if (!adjPoint.hasTile() && !adjPoint.isType(NON_PLAYABLE_BIT)) {
 				potential += 1;
 			}
 		}

@@ -34,10 +34,13 @@ import {
 	gameOptionEnabled,
 } from '../GameOptions';
 import {
-	GATE,
-	NON_PLAYABLE,
-	NEUTRAL,
-	POSSIBLE_MOVE,
+	RED_BIT,
+	WHITE_BIT,
+	NON_PLAYABLE_BIT,
+	NEUTRAL_BIT,
+	GATE_BIT,
+	MARKED_BIT,
+	POSSIBLE_MOVE_BIT,
 	SkudPaiShoBoardPoint,
 } from './SkudPaiShoBoardPoint';
 import {
@@ -50,7 +53,7 @@ import {
 	SkudPaiShoHarmony,
 	SkudPaiShoHarmonyManager
 } from './SkudPaiShoHarmony';
-import { SkudPaiShoTile, WHITE, RED } from './SkudPaiShoTile';
+import { RED, WHITE, SkudPaiShoTile } from './SkudPaiShoTile';
 import { SkudPaiShoTileManager } from './SkudPaiShoTileManager';
 import { paiShoBoardMaxRowOrCol } from '../pai-sho-common/PaiShoBoardHelp';
 import { showBadMoveModal } from '../ModalManager';
@@ -118,19 +121,19 @@ export class SkudPaiShoBoard {
 
 				// Add relevant types to SkudPaiShoBoardPoint
 				if (cellPointType === 0) {
-					thisCell.addType(NON_PLAYABLE);
+					thisCell.addType(NON_PLAYABLE_BIT);
 				}
 				if (cellPointType === 1) {
-					thisCell.addType(GATE);
+					thisCell.addType(GATE_BIT);
 				}
 				if (cellPointType === 2 || cellPointType === 6 || cellPointType === 7 || cellPointType === 8) {
-					thisCell.addType(NEUTRAL);
+					thisCell.addType(NEUTRAL_BIT);
 				}
 				if (cellPointType === 4 || cellPointType === 5 || cellPointType === 7 || cellPointType === 8) {
-					thisCell.addType(WHITE);
+					thisCell.addType(WHITE_BIT);
 				}
 				if (cellPointType === 3 || cellPointType === 5 || cellPointType === 6 || cellPointType === 8) {
-					thisCell.addType(RED);
+					thisCell.addType(RED_BIT);
 				}
 
 				thisCell.row = row;
@@ -200,7 +203,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceAccent(boardPoint) {
-		return !boardPoint.hasTile() && !boardPoint.isType(GATE);
+		return !boardPoint.hasTile() && !boardPoint.isType(GATE_BIT);
 	}
 
 	/**
@@ -215,7 +218,7 @@ export class SkudPaiShoBoard {
 
 		if (!this.canPlaceAccent(boardPoint)) return false;
 
-		if (!boardPoint.isType(GATE)) {
+		if (!boardPoint.isType(GATE_BIT)) {
 			boardPoint.putTile(tile);
 			this.rockRowAndCols.push(rowAndCol);
 		}
@@ -236,14 +239,14 @@ export class SkudPaiShoBoard {
 
 		for (let i = 0; i < rowCols.length; i++) {
 			const bp = this.cells[rowCols[i].row][rowCols[i].col];
-			if (bp.isType(GATE) && !newWheelRule) {
+			if (bp.isType(GATE_BIT) && !newWheelRule) {
 				// debug("Wheel cannot be played next to a GATE");
 				return false;
 			} else if (!newKnotweedRules && bp.hasTile() && (bp.tile.drained || bp.tile.accentType === KNOTWEED)) {
 				// debug("wheel cannot be played next to drained tile or Knotweed");
 				return false;
 			} else if (newWheelRule) {
-				if (bp.isType(GATE) && bp.hasTile()) {
+				if (bp.isType(GATE_BIT) && bp.hasTile()) {
 					return false;	// Can't play Wheel next to Gate if Blooming tile
 				}
 			}
@@ -348,7 +351,7 @@ export class SkudPaiShoBoard {
 			// Validate: Must not be played next to Gate
 			for (let i = 0; i < rowCols.length; i++) {
 				const bp = this.cells[rowCols[i].row][rowCols[i].col];
-				if (bp.isType(GATE)) {
+				if (bp.isType(GATE_BIT)) {
 					// debug("Knotweed cannot be played next to a GATE");
 					return false;
 				}
@@ -391,7 +394,7 @@ export class SkudPaiShoBoard {
 	 * @returns {boolean}
 	 */
 	canPlaceBoat(boardPoint, tile) {
-		if (!boardPoint.hasTile() || boardPoint.isType(GATE)) return false; // Boat must always be played over another tile
+		if (!boardPoint.hasTile() || boardPoint.isType(GATE_BIT)) return false; // Boat must always be played over another tile
 
 		if (boardPoint.tile.type === ACCENT_TILE && !boatOnlyMoves) {
 			if (boardPoint.tile.accentType !== KNOTWEED && !simplest && !rocksUnwheelable) {
@@ -524,12 +527,12 @@ export class SkudPaiShoBoard {
 		let surroundsGrowingFlower = false;
 		for (let i = 0; i < rowCols.length; i++) {
 			const bp = this.cells[rowCols[i].row][rowCols[i].col];
-			if (!bp.isType(GATE)
+			if (!bp.isType(GATE_BIT)
 				&& bp.hasTile()
 				&& bp.tile.ownerName === tile.ownerName
 				&& bp.tile.type !== ACCENT_TILE) {
 				surroundsOwnersFlowerTile = true;
-			} else if (bp.isType(GATE) && bp.hasTile()) {
+			} else if (bp.isType(GATE_BIT) && bp.hasTile()) {
 				surroundsGrowingFlower = true;
 			}
 		}
@@ -812,7 +815,7 @@ export class SkudPaiShoBoard {
 				if (row < 0 || col < 0 || row >= 17 || col >= 17) continue;	// Skip points outside range of the grid
 
 				const boardPoint = this.cells[row][col];
-				if (boardPoint.isType(NON_PLAYABLE)) continue;	// Skip non-playable points
+				if (boardPoint.isType(NON_PLAYABLE_BIT)) continue;	// Skip non-playable points
 
 				rowAndCols.push(new RowAndColumn(row, col));
 			}
@@ -948,7 +951,7 @@ export class SkudPaiShoBoard {
 			for (let col = 0; col < this.cells[row].length; col++) {
 				const bp = this.cells[row][col];
 				if (!bp.hasTile()) continue;
-				if (!bp.isType(GATE)) {
+				if (!bp.isType(GATE_BIT)) {
 					this.trapTilesSurroundingPointIfNeeded(bp);
 				}
 				if (newKnotweedRules) {
@@ -971,7 +974,7 @@ export class SkudPaiShoBoard {
 
 		for (const rowCol of rowCols) {
 			const bp = this.cells[rowCol.row][rowCol.col];
-			if (bp.hasTile() && !bp.isType(GATE) && bp.tile.type !== ACCENT_TILE && bp.tile.specialFlowerType !== ORCHID) {
+			if (bp.hasTile() && !bp.isType(GATE_BIT) && bp.tile.type !== ACCENT_TILE && bp.tile.specialFlowerType !== ORCHID) {
 				bp.tile.drained = true;
 			}
 		}
@@ -991,7 +994,7 @@ export class SkudPaiShoBoard {
 
 		for (const rowCol of rowCols) {
 			const bp = this.cells[rowCol.row][rowCol.col];
-			if (bp.hasTile() && !bp.isType(GATE)) {
+			if (bp.hasTile() && !bp.isType(GATE_BIT)) {
 				if (bp.tile.ownerName !== orchidOwner && bp.tile.type !== ACCENT_TILE) {
 					bp.tile.trapped = true;
 				}
@@ -1019,7 +1022,7 @@ export class SkudPaiShoBoard {
 			row.forEach(function(boardPoint) {
 				if (boardPoint.hasTile() && boardPoint.tile.specialFlowerType === ORCHID
 					&& boardPoint.tile.ownerName === lotusTile.ownerName
-					&& !boardPoint.isType(GATE)) {
+					&& !boardPoint.isType(GATE_BIT)) {
 					isProtected = true;
 				}
 			});
@@ -1042,7 +1045,7 @@ export class SkudPaiShoBoard {
 			row.forEach(function(boardPoint) {
 				if (boardPoint.hasTile() && boardPoint.tile.specialFlowerType === WHITE_LOTUS
 					&& boardPoint.tile.ownerName === orchidTile.ownerName
-					&& !boardPoint.isType(GATE)) {
+					&& !boardPoint.isType(GATE_BIT)) {
 					orchidCanCapture = true;
 				}
 			});
@@ -1079,7 +1082,7 @@ export class SkudPaiShoBoard {
 			let orchidVulnerable = false;
 			this.cells.forEach(function(row) {
 				row.forEach(function(boardPoint) {
-					if (!boardPoint.isType(GATE) && boardPoint.hasTile() && boardPoint.tile.specialFlowerType === WHITE_LOTUS
+					if (!boardPoint.isType(GATE_BIT) && boardPoint.hasTile() && boardPoint.tile.specialFlowerType === WHITE_LOTUS
 						&& boardPoint.tile.ownerName === orchidTile.ownerName) {
 						orchidVulnerable = true;
 					}
@@ -1173,7 +1176,7 @@ export class SkudPaiShoBoard {
 			debug("canMoveTileToPoint: Tile is drained (old knotweed rules)");
 			return false;
 		// If endpoint is a Gate, that's wrong.
-		} else if (boardPointEnd.isType(GATE)) {
+		} else if (boardPointEnd.isType(GATE_BIT)) {
 			debug("canMoveTileToPoint: Cannot move to a Gate");
 			return false;
 		}
@@ -1303,7 +1306,7 @@ export class SkudPaiShoBoard {
 	 */
 	verifyAbleToReach(boardPointStart, boardPointEnd, numMoves) {
 		if (!boardPointStart || !boardPointEnd) return false;
-		if (boardPointStart.isType(NON_PLAYABLE) || boardPointEnd.isType(NON_PLAYABLE)) return false;
+		if (boardPointStart.isType(NON_PLAYABLE_BIT) || boardPointEnd.isType(NON_PLAYABLE_BIT)) return false;
 
 		const startRow = boardPointStart.row;
 		const startCol = boardPointStart.col;
@@ -1489,7 +1492,7 @@ export class SkudPaiShoBoard {
 		const tileHarmonies = [];
 		
 		// Gates and open points never form harmony
-		if (boardPoint.isType(GATE) || !boardPoint.hasTile()) return tileHarmonies;
+		if (boardPoint.isType(GATE_BIT) || !boardPoint.hasTile()) return tileHarmonies;
 
 		const tile = boardPoint.tile;
 		const surroundingLionTurtleTiles = this.getSurroundingLionTurtleTiles(boardPoint);
@@ -1514,7 +1517,7 @@ export class SkudPaiShoBoard {
 				let newBoardPoint = this.cells[row][col];
 
 				// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
-				if (newBoardPoint.isType(NON_PLAYABLE) || newBoardPoint.isType(GATE)) break;
+				if (newBoardPoint.isType(NON_PLAYABLE_BIT) || newBoardPoint.isType(GATE_BIT)) break;
 
 				// Stop searching this direction once we find a tile in the line
 				if (newBoardPoint.hasTile()) {
@@ -1556,7 +1559,7 @@ export class SkudPaiShoBoard {
 	 */
 	hasDisharmony(boardPoint) {
 		// Gates and open points never clash
-		if (boardPoint.isType(GATE) || !boardPoint.hasTile()) return false;
+		if (boardPoint.isType(GATE_BIT) || !boardPoint.hasTile()) return false;
 
 		const tile = boardPoint.tile;
 
@@ -1573,7 +1576,7 @@ export class SkudPaiShoBoard {
 				let newBoardPoint = this.cells[row][col];
 
 				// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
-				if (newBoardPoint.isType(NON_PLAYABLE) || newBoardPoint.isType(GATE)) break;
+				if (newBoardPoint.isType(NON_PLAYABLE_BIT) || newBoardPoint.isType(GATE_BIT)) break;
 
 				// We can stop this direction if we find a non-clashing tile blocking the path
 				if (newBoardPoint.hasTile()) {
@@ -1595,7 +1598,7 @@ export class SkudPaiShoBoard {
 	 * @param {SkudPaiShoBoardPoint} boardPoint
 	 */
 	addPossibleMove(boardPoint) {
-		boardPoint.addType(POSSIBLE_MOVE);
+		boardPoint.addType(POSSIBLE_MOVE_BIT);
 		this.legalMoves.push(boardPoint);
 	}
 
@@ -1633,7 +1636,7 @@ export class SkudPaiShoBoard {
 			if (possibleRow <= 0 || possibleRow > 16 || possibleCol <= 0 || possibleCol >= 16) return;
 
 			let potentialMovePoint = this.cells[possibleRow][possibleCol];
-			if (potentialMovePoint.isType(NON_PLAYABLE)) return;
+			if (potentialMovePoint.isType(NON_PLAYABLE_BIT)) return;
 
 			potentialMovePoints.push(potentialMovePoint);
 		});
@@ -1684,7 +1687,7 @@ export class SkudPaiShoBoard {
 	removePossibleMovePoints() {
 		this.cells.forEach(function(row) {
 			row.forEach(function(boardPoint) {
-				boardPoint.removeType(POSSIBLE_MOVE);
+				boardPoint.removeType(POSSIBLE_MOVE_BIT);
 				boardPoint.clearPossibleMovementTypes();
 			});
 		});
@@ -1719,7 +1722,7 @@ export class SkudPaiShoBoard {
 							const notationPoint = new NotationPoint(new RowAndColumn(surroundingPoint.row, surroundingPoint.col).notationPointString);
 							newBoard.placeTile(tile, notationPoint);
 							if (gameOptionEnabled(IGNORE_CLASHING) || !newBoard.moveCreatesDisharmony(notationPoint, notationPoint)) {
-								surroundingPoint.addType(POSSIBLE_MOVE);
+								surroundingPoint.addType(POSSIBLE_MOVE_BIT);
 							}
 						}
 					}
@@ -1753,7 +1756,7 @@ export class SkudPaiShoBoard {
 
 		bpCheckList.forEach(function(bp) {
 			if (!bp.hasTile()) {
-				bp.addType(POSSIBLE_MOVE);
+				bp.addType(POSSIBLE_MOVE_BIT);
 			}
 		});
 	}
@@ -1789,7 +1792,7 @@ export class SkudPaiShoBoard {
 					|| (tile.accentType === POND && self.canPlaceAccent(boardPoint, tile))
 					|| (tile.accentType === LION_TURTLE && self.canPlaceAccent(boardPoint, tile))
 				) {
-					boardPoint.addType(POSSIBLE_MOVE);
+					boardPoint.addType(POSSIBLE_MOVE_BIT);
 				}
 			});
 		});
@@ -1811,7 +1814,7 @@ export class SkudPaiShoBoard {
 			for (const rowCol of rowCols) {
 				const boardPointEnd = this.cells[rowCol.row][rowCol.col];
 				if (this.canTransportTileToPointWithBoat(boardPoint, boardPointEnd)) {
-					boardPointEnd.addType(POSSIBLE_MOVE);
+					boardPointEnd.addType(POSSIBLE_MOVE_BIT);
 				}
 			}
 			return;
@@ -1823,7 +1826,7 @@ export class SkudPaiShoBoard {
 				const boardPointEnd = this.cells[row][col];
 				if (Math.abs(boardPoint.row - boardPointEnd.row) + Math.abs(boardPoint.col - boardPointEnd.col) === 1) {
 					if (this.canMoveTileToPoint(player, boardPoint, boardPointEnd)) {
-						boardPointEnd.addType(POSSIBLE_MOVE);
+						boardPointEnd.addType(POSSIBLE_MOVE_BIT);
 					}
 				}
 			}
@@ -1902,8 +1905,11 @@ export class SkudPaiShoBoard {
 		let count = 0;
 		for (const cellRow of this.cells) {
 			for (const bp of cellRow) {
-				if (bp.hasTile() && bp.types.length === 1 && bp.isType(bp.tile.basicColorName)) continue;
-				count++;
+				if (!bp.hasTile() || !bp.tile.basicColorName) continue; // Tile doesn't have basic flower
+				if ((bp.tile.basicColorName === RED && bp.isType(RED_BIT)) ||
+					(bp.tile.basicColorName === WHITE && bp.isType(WHITE_BIT))) {
+						count++; // Basic flower is in its own garden
+					}
 			}
 		}
 		return count;

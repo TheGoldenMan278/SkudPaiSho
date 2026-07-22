@@ -2,7 +2,7 @@
 
 import { ACCENT_TILE, debug } from '../GameData';
 import { ARRANGING, PLANTING } from '../CommonNotationObjects';
-import { MARKED, NON_PLAYABLE, POSSIBLE_MOVE } from './SkudPaiShoBoardPoint';
+import { MARKED_BIT, NON_PLAYABLE_BIT, POSSIBLE_MOVE_BIT } from './SkudPaiShoBoardPoint';
 import { NO_HARMONY_VISUAL_AIDS, gameOptionEnabled } from '../GameOptions';
 import { pieceAnimationLength, piecePlaceAnimation } from '../PaiShoMain';
 import { RmbDown, RmbUp, clearMessage, pointClicked, showPointMessage, showTileMessage, unplayedTileClicked } from '../UiInteraction';
@@ -68,11 +68,11 @@ export class SkudPaiShoActuator {
 		board.cells.forEach((column) => {
 			column.forEach((cell) => {
 				if (cell) {
-					if (markingManager.pointIsMarked(cell) && !cell.isType(MARKED)){
-						cell.addType(MARKED);
+					if (markingManager.pointIsMarked(cell) && !cell.isType(MARKED_BIT)){
+						cell.addType(MARKED_BIT);
 					}
-					else if (!markingManager.pointIsMarked(cell) && cell.isType(MARKED)){
-						cell.removeType(MARKED);
+					else if (!markingManager.pointIsMarked(cell) && cell.isType(MARKED_BIT)){
+						cell.removeType(MARKED_BIT);
 					}
 					this.addBoardPoint(cell, moveToAnimate, moveAnimationBeginStep);
 				}
@@ -161,12 +161,12 @@ export class SkudPaiShoActuator {
 						&& !moveToAnimate.boatBonusPoint 
 						&& isSamePoint(moveToAnimate.bonusEndPoint, boardPoint.col, boardPoint.row);
 
-		if (!boardPoint.isType(NON_PLAYABLE)) {
+		if (!boardPoint.isType(NON_PLAYABLE_BIT)) {
 			theDiv.classList.add("activePoint");
-			if (boardPoint.isType(MARKED)) {
+			if (boardPoint.isType(MARKED_BIT)) {
 				theDiv.classList.add("markedPoint");
 			}	
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 				theDiv.classList.add("possibleMove");
 			} else if (boardPoint.betweenHarmony 
 					&& !gameOptionEnabled(NO_HARMONY_VISUAL_AIDS)

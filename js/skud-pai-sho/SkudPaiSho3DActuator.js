@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { ACCENT_TILE } from '../GameData';
 import { ARRANGING, PLANTING } from '../CommonNotationObjects';
-import { MARKED, NON_PLAYABLE, POSSIBLE_MOVE } from './SkudPaiShoBoardPoint';
+import { MARKED_BIT, NON_PLAYABLE_BIT, POSSIBLE_MOVE_BIT } from './SkudPaiShoBoardPoint';
 import { NO_HARMONY_VISUAL_AIDS, gameOptionEnabled } from '../GameOptions';
 import { pieceAnimationLength, piecePlaceAnimation } from '../PaiShoMain';
 import { getUserGamePreference } from '../GamePrefs';
@@ -53,10 +53,10 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 		board.cells.forEach((column) => {
 			column.forEach((cell) => {
 				if (cell) {
-					if (markingManager.pointIsMarked(cell) && !cell.isType(MARKED)) {
-						cell.addType(MARKED);
-					} else if (!markingManager.pointIsMarked(cell) && cell.isType(MARKED)) {
-						cell.removeType(MARKED);
+					if (markingManager.pointIsMarked(cell) && !cell.isType(MARKED_BIT)) {
+						cell.addType(MARKED_BIT);
+					} else if (!markingManager.pointIsMarked(cell) && cell.isType(MARKED_BIT)) {
+						cell.removeType(MARKED_BIT);
 					}
 					this.addBoardPoint3D(cell, moveToAnimate, moveAnimationBeginStep);
 				}
@@ -79,7 +79,7 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 	// --- Board Point Rendering ---
 
 	addBoardPoint3D(boardPoint, moveToAnimate, moveAnimationBeginStep) {
-		if (boardPoint.isType(NON_PLAYABLE)) return;
+		if (boardPoint.isType(NON_PLAYABLE_BIT)) return;
 
 		const x = boardPoint.col - 8;
 		const z = boardPoint.row - 8;
@@ -92,11 +92,11 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 
 		// Visual state indicators for empty points
 		if (!boardPoint.hasTile() && !isAnimationPointOfBoatRemovingAccentTile) {
-			if (boardPoint.isType(MARKED)) {
+			if (boardPoint.isType(MARKED_BIT)) {
 				this.addMarkedIndicator(x, z);
 			}
 
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 				this.addPossibleMoveIndicator(x, z);
 			} else if (boardPoint.betweenHarmony
 				&& !gameOptionEnabled(NO_HARMONY_VISUAL_AIDS)
@@ -184,11 +184,11 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 				}
 			}
 
-			if (boardPoint.isType(MARKED)) {
+			if (boardPoint.isType(MARKED_BIT)) {
 				this.addMarkedIndicator(x, z);
 			}
 
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 				this.addSelectableTileHighlight(x, z);
 			}
 

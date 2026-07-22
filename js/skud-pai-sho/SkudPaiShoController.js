@@ -51,7 +51,7 @@ import {
 	OPTION_INFORMAL_START,
 	gameOptionEnabled,
 } from '../GameOptions';
-import { GATE, NEUTRAL, POSSIBLE_MOVE } from './SkudPaiShoBoardPoint';
+import { GATE_BIT, NEUTRAL_BIT, POSSIBLE_MOVE_BIT, RED_BIT, WHITE_BIT } from './SkudPaiShoBoardPoint';
 import { MCTS } from '../ai/MCTS';
 import { RED, SkudPaiShoTile, WHITE } from './SkudPaiShoTile';
 import { SkudAIv1 } from '../ai/SkudAIv1';
@@ -611,7 +611,7 @@ export class SkudPaiShoController {
 				this.theGame.revealPossibleMovePoints(boardPoint);
 			}
 		} else if (this.notationBuilder.status === WAITING_FOR_ENDPOINT) {
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 				// They're trying to move there! And they can! Exciting!
 				// Need the notation!
 				this.notationBuilder.endPoint = new NotationPoint(htmlPoint.getAttribute("name"));
@@ -645,7 +645,7 @@ export class SkudPaiShoController {
 				this.notationBuilder = new SkudPaiShoNotationBuilder();
 			}
 		} else if (this.notationBuilder.status === WAITING_FOR_BONUS_ENDPOINT) {
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 
 				this.theGame.hidePossibleMovePoints();
 				this.notationBuilder.bonusEndPoint = new NotationPoint(htmlPoint.getAttribute("name"));
@@ -670,7 +670,7 @@ export class SkudPaiShoController {
 				this.notationBuilder.status = READY_FOR_BONUS;
 			}
 		} else if (this.notationBuilder.status === WAITING_FOR_BOAT_BONUS_POINT) {
-			if (boardPoint.isType(POSSIBLE_MOVE)) {
+			if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 
 				this.notationBuilder.status = MOVE_DONE;
 
@@ -759,15 +759,15 @@ export class SkudPaiShoController {
 			}
 		}
 
-		if (boardPoint.isType(NEUTRAL)) {
+		if (boardPoint.isType(NEUTRAL_BIT)) {
 			message.push(getNeutralPointMessage());
-		} else if (boardPoint.isType(RED) && boardPoint.isType(WHITE)) {
+		} else if (boardPoint.isType(RED_BIT) && boardPoint.isType(WHITE_BIT)) {
 			message.push(getRedWhitePointMessage());
-		} else if (boardPoint.isType(RED)) {
+		} else if (boardPoint.isType(RED_BIT)) {
 			message.push(getRedPointMessage());
-		} else if (boardPoint.isType(WHITE)) {
+		} else if (boardPoint.isType(WHITE_BIT)) {
 			message.push(getWhitePointMessage());
-		} else if (boardPoint.isType(GATE)) {
+		} else if (boardPoint.isType(GATE_BIT)) {
 			message.push(getGatePointMessage());
 		}
 

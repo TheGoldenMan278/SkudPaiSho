@@ -13,6 +13,15 @@ export var MARKED = "Marked";
 export var POSSIBLE_MOVE = "Possible Move";
 export var OPEN_GATE = "OPEN GATE";
 
+// Bit flags to define state of each SkudPaiShoBoardPoint
+export const RED_BIT			= 0b0000001; // White basic flowers can't land on red points
+export const WHITE_BIT			= 0b0000010; // Red basic flowers can't land on red points
+export const NON_PLAYABLE_BIT	= 0b0000100; // Point isn't in playable area (used since board is a circle)
+export const NEUTRAL_BIT		= 0b0001000; // White and red flowers can land here
+export const GATE_BIT			= 0b0010000; // Flowers can only be planted here
+export const MARKED_BIT			= 0b0100000; // Styles currently selected point in actuator (Visual only)
+export const POSSIBLE_MOVE_BIT	= 0b1000000; // Used to display legal moves for the currently selected tile (Visual only)
+
 export var thinDot = "·";
 export var thickDot = "•";
 export var whiteDot = "◦";
@@ -20,8 +29,8 @@ export var gateDot = "⟡";
 
 export class SkudPaiShoBoardPoint {
 	constructor() {
-		/** @type {string[]} */
-		this.types = [];
+		/** @type {number} Binary number where each bit sets the state of the point */
+		this.types = 0b0000000; // No bit flags set
 		/** @type {number} */
 		this.row = -1;
 		/** @type {number} */
@@ -37,25 +46,19 @@ export class SkudPaiShoBoardPoint {
 	// =========================================================
 	
 	/**
-	 * Add type to this.types.
-	 * @param {string} type - Type to be added.
+	 * Add binary type flag to this.types.
+	 * @param {number} type - Type to be added.
 	 */
 	addType(type) {
-		if (!this.types.includes(type)) {
-			this.types.push(type);
-		}
+		this.types |= type;
 	}
 	
 	/**
-	 * Remove type from this.types.
-	 * @param {string} type - Type to be removed.
+	 * Remove binary type flag from this.types.
+	 * @param {number} type - Type to be removed.
 	 */
 	removeType(type) {
-		for (let i = 0; i < this.types.length; i++) {
-			if (this.types[i] === type) {
-				this.types.splice(i, 1);
-			}
-		}
+		this.types &= ~type; // Do AND NOT with type so all bits are retained except the type we want to subtract
 	}
 
 	/**
@@ -118,12 +121,12 @@ export class SkudPaiShoBoardPoint {
 	}
 
 	/**
-	 * Checks if SkudPaiShoBoardPoint has type in this.types.
-	 * @param {string} type
+	 * Checks if SkudPaiShoBoardPoint has type flag set in this.types.
+	 * @param {number} type - Bitwise flag
 	 * @returns {boolean}
 	 */
 	isType(type) {
-		return this.types.includes(type);
+		return (this.types & type) !== 0;
 	}
 
 	/**
@@ -131,7 +134,7 @@ export class SkudPaiShoBoardPoint {
 	 * @returns {boolean}
 	 */
 	isOpenGate() {
-		return !this.hasTile() && this.types.includes(GATE);
+		return !this.hasTile() && this.isType(GATE_BIT);
 	}
 
 	/**
@@ -170,17 +173,17 @@ export class SkudPaiShoBoardPoint {
 	 */
 	canHoldTile(tile, ignoreTileCheck) {
 		// Can't move to non_playable point or back onto gate
-		if (this.isType(NON_PLAYABLE) || this.isType(GATE)) {
+		if (this.isType(NON_PLAYABLE_BIT) || this.isType(GATE_BIT)) {
 			return false;
 		// This function does not take into account capturing abilities
 		} else if (!ignoreTileCheck && this.hasTile()) {
 			return false;
 		// For basic flowers, can't move into opposing colored garden
 		} else if (tile.type === BASIC_FLOWER) {
-			if (!(this.isType(NEUTRAL) || this.isType(tile.basicColorName))) {
-				return false;
-			}
-			return true;
+			if (this.isType(NEUTRAL_BIT)) return true;
+			if (tile.basicColorName === RED && this.isType(RED_BIT)) return true;
+			if (tile.basicColorName === WHITE && this.isType(WHITE_BIT)) return true;
+			return false;
 		// Garden color rules don't apply to special flowers and accents
 		} else if (tile.type === SPECIAL_FLOWER || tile.type === ACCENT_TILE) {
 			return true;
@@ -214,17 +217,11 @@ export class SkudPaiShoBoardPoint {
 	getCopy() {
 		const copy = new SkudPaiShoBoardPoint();
 
-		// this.types
-		for (const type of this.types) {
-			copy.types.push(type);
-		}
-
-		// this.row
 		copy.row = this.row;
-		// this.col
 		copy.col = this.col;
+		copy.types = this.types;
 
-		// tile
+		// Copy Tile
 		if (this.hasTile()) {
 			copy.tile = this.tile.getCopy();
 			copy.tile.bp = this;

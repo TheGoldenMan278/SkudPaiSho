@@ -11,8 +11,8 @@ import {
   RowAndColumn,
 } from '../CommonNotationObjects';
 import {
-  NON_PLAYABLE,
-  POSSIBLE_MOVE,
+  NON_PLAYABLE_BIT,
+  POSSIBLE_MOVE_BIT
 } from '../skud-pai-sho/SkudPaiShoBoardPoint';
 import {
   SkudPaiShoNotationBuilder,
@@ -184,8 +184,8 @@ export class SkudAiHelp {
 
 		game.board.cells.forEach(function(row) {
 			row.forEach(function(boardPoint) {
-				if (!boardPoint.isType(NON_PLAYABLE)) {
-					if (boardPoint.isType(POSSIBLE_MOVE)) {
+				if (!boardPoint.isType(NON_PLAYABLE_BIT)) {
+					if (boardPoint.isType(POSSIBLE_MOVE_BIT)) {
 						points.push(boardPoint);
 					}
 				}

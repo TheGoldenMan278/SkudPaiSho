@@ -25,7 +25,7 @@ import {
 	PLANTING,
 	RowAndColumn,
 } from '../CommonNotationObjects';
-import { POSSIBLE_MOVE } from '../skud-pai-sho/SkudPaiShoBoardPoint';
+import { POSSIBLE_MOVE_BIT } from '../skud-pai-sho/SkudPaiShoBoardPoint';
 import {
 	SkudPaiShoNotationBuilder,
 	SkudPaiShoNotationMove,
@@ -600,7 +600,7 @@ SkudStrategicAI.prototype.getPossibleMovePoints = function(game) {
 	var points = [];
 	for (var row = 0; row < game.board.cells.length; row++) {
 		for (var col = 0; col < game.board.cells[row].length; col++) {
-			if (game.board.cells[row][col].isType(POSSIBLE_MOVE)) {
+			if (game.board.cells[row][col].isType(POSSIBLE_MOVE_BIT)) {
 				points.push(game.board.cells[row][col]);
 			}
 		}
