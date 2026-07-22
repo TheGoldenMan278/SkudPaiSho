@@ -72,7 +72,8 @@ export class SkudPaiShoBoard {
 	// =========================================================
 	constructor() {
 		this.size = new RowAndColumn(17, 17);
-		this.cells = this.brandNew();
+		this.cells = this.initCells();
+		this.neighborCells = this.initNeighborCells();
 
 		this.harmonyManager = new SkudPaiShoHarmonyManager();
 
@@ -88,7 +89,7 @@ export class SkudPaiShoBoard {
 	 * Generates 2D array of SkudPaiShoBoardPoints to fill board
 	 * @returns {SkudPaiShoBoardPoint[][]} Cells (2D)
 	 */
-	brandNew() {
+	initCells() {
 		const cells = [];
 
 		// 0 - Non_Playable, 1 - Gate, 2 - Neutral, 3 - Red, 4 - White,
@@ -142,8 +143,40 @@ export class SkudPaiShoBoard {
 			}
 			cells.push(thisRow);
 		}
-
+		
 		return cells;
+	}
+
+	/**
+	 * Generates 2D array of RowAndColumn lists representing each cell's in bounds neighbors
+	 * @returns {RowAndColumn[][][]} Cell Neighbors (2D arra of RowAndColumn lists)
+	 */
+	initNeighborCells() {
+		const neighborCells = [];
+
+		for (let row = 0; row < this.cells.length; row++) {
+			let thisRow = [];
+			for (let col = 0; col < this.cells[row].length; col++) {
+				let neighbors = [];
+
+				for (let rowAdj = row - 1; rowAdj <= row + 1; rowAdj++) {
+					for (let colAdj = col - 1; colAdj <= col + 1; colAdj++) {
+						if (rowAdj === row && colAdj === col) continue;	// Skip making cell neighbor to itself
+						const rowColAdj = new RowAndColumn(rowAdj, colAdj)
+						if (!this.isValidRowCol(rowColAdj)) continue; // Skip points outside range of the grid
+		
+						const boardPoint = this.cells[rowAdj][colAdj];
+						if (boardPoint.isType(NON_PLAYABLE_BIT)) continue;	// Skip non-playable points
+		
+						neighbors.push(rowColAdj);
+					}
+				}
+				thisRow.push(neighbors);
+			}
+			neighborCells.push(thisRow);
+		}
+
+		return neighborCells;
 	}
 
 	// =========================================================
@@ -232,13 +265,9 @@ export class SkudPaiShoBoard {
 	canPlaceWheel(boardPoint) {
 		if (!this.canPlaceAccent(boardPoint)) return false;
 
-		// get surrounding RowAndColumn values
-		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-
 		// Validate.. Wheel must not be next to a Gate, create Clash, or move tile off board
-
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			if (bp.isType(GATE_BIT) && !newWheelRule) {
 				// debug("Wheel cannot be played next to a GATE");
 				return false;
@@ -259,9 +288,8 @@ export class SkudPaiShoBoard {
 
 			if (superRocks && bp.hasTile()) {
 				// Tiles surrounding Rock cannot be moved by Wheel
-				const moreRowCols = this.getSurroundingRowAndCols(bp);
-				for (let j = 0; j < moreRowCols.length; j++) {
-					const otherBp = this.cells[moreRowCols[j].row][moreRowCols[j].col];
+				for (const moreRowCol of this.neighborCells[bp.row][bp.col]) {
+					const otherBp = this.cells[moreRowCol.row][moreRowCol.col];
 					if (otherBp.hasTile() && otherBp.tile.accentType === ROCK) {
 						return false;
 					}
@@ -270,7 +298,7 @@ export class SkudPaiShoBoard {
 
 			// If a tile would be affected, verify the target
 			if (bp.hasTile()) {
-				const targetRowCol = this.getClockwiseRowCol(boardPoint, rowCols[i]);
+				const targetRowCol = this.getClockwiseRowCol(boardPoint, rowCol);
 				if (this.isValidRowCol(targetRowCol)) {
 					const targetBp = this.cells[targetRowCol.row][targetRowCol.col];
 					if (!targetBp.canHoldTile(bp.tile, true)) {
@@ -306,9 +334,6 @@ export class SkudPaiShoBoard {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
 
-		// get surrounding RowAndColumn values
-		const rowCols = this.getSurroundingRowAndCols(rowAndCol);
-
 		if (!ignoreCheck && !this.canPlaceWheel(boardPoint)) {
 			return false;
 		}
@@ -317,10 +342,10 @@ export class SkudPaiShoBoard {
 
 		// Perform rotation: Get results, then place all tiles as needed
 		const results = [];
-		for (let i = 0; i < rowCols.length; i++) {
+		for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
 			// Save tile and target rowAndCol
-			const tile = this.cells[rowCols[i].row][rowCols[i].col].removeTile();
-			const targetRowCol = this.getClockwiseRowCol(rowAndCol, rowCols[i]);
+			const tile = this.cells[rowCol.row][rowCol.col].removeTile();
+			const targetRowCol = this.getClockwiseRowCol(rowAndCol, rowCol);
 			if (this.isValidRowCol(targetRowCol)) {
 				results.push([tile, targetRowCol]);
 			}
@@ -345,12 +370,9 @@ export class SkudPaiShoBoard {
 		if (!this.canPlaceAccent(boardPoint)) return false;
 
 		if (!newKnotweedRules) {
-			// Knotweed can be placed next to Gate in new knotweed rules
-			const rowCols = this.getSurroundingRowAndCols(boardPoint);
-
-			// Validate: Must not be played next to Gate
-			for (let i = 0; i < rowCols.length; i++) {
-				const bp = this.cells[rowCols[i].row][rowCols[i].col];
+			// Validate: Must not be played next to Gate in new knotweed rules
+			for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
+				const bp = this.cells[rowCol.row][rowCol.col];
 				if (bp.isType(GATE_BIT)) {
 					// debug("Knotweed cannot be played next to a GATE");
 					return false;
@@ -371,8 +393,6 @@ export class SkudPaiShoBoard {
 		const rowAndCol = notationPoint.rowAndColumn;
 		const boardPoint = this.cells[rowAndCol.row][rowAndCol.col];
 
-		const rowCols = this.getSurroundingRowAndCols(rowAndCol);
-
 		if (!this.canPlaceKnotweed(boardPoint)) {
 			return false;
 		}
@@ -381,8 +401,8 @@ export class SkudPaiShoBoard {
 		boardPoint.putTile(tile);
 
 		// "Drain" surrounding tiles
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			bp.drainTile();
 		}
 	}
@@ -450,10 +470,9 @@ export class SkudPaiShoBoard {
 			// This line follows the actual current rule: Both removed from board
 			tileRemovedWithBoat = boardPoint.removeTile();
 
-			const rowCols = this.getSurroundingRowAndCols(rowAndCol);
 			// "Restore" surrounding tiles
-			for (let i = 0; i < rowCols.length; i++) {
-				const bp = this.cells[rowCols[i].row][rowCols[i].col];
+			for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+				const bp = this.cells[rowCol.row][rowCol.col];
 				bp.restoreTile();
 			}
 
@@ -521,12 +540,10 @@ export class SkudPaiShoBoard {
 		// Place tile
 		boardPoint.putTile(tile);
 
-		const rowCols = this.getSurroundingRowAndCols(rowAndCol);
-
 		let surroundsOwnersFlowerTile = false;
 		let surroundsGrowingFlower = false;
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			if (!bp.isType(GATE_BIT)
 				&& bp.hasTile()
 				&& bp.tile.ownerName === tile.ownerName
@@ -543,8 +560,8 @@ export class SkudPaiShoBoard {
 
 		// Return each tile to hand if surrounds Owner's Blooming Flower Tile and no Growing Flowers
 		if (surroundsOwnersFlowerTile && !surroundsGrowingFlower) {
-			for (let i = 0; i < rowCols.length; i++) {
-				const bp = this.cells[rowCols[i].row][rowCols[i].col];
+			for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+				const bp = this.cells[rowCol.row][rowCol.col];
 				if (bp.hasTile()) {
 					// Put it back
 					const removedTile = bp.removeTile();
@@ -674,14 +691,13 @@ export class SkudPaiShoBoard {
 	 */
 	undoPlaceWheel(tile, notationPoint) {
 		const rowAndCol = notationPoint.rowAndColumn;
-		const rowCols = this.getSurroundingRowAndCols(rowAndCol); // Get surrounding RowAndColumn values
 
 		// Perform rotation: Get results, then place all tiles as needed
 		const results = [];
-		for (let i = 0; i < rowCols.length; i++) {
+		for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
 			// Save tile and target rowAndCol
-			const tile = this.cells[rowCols[i].row][rowCols[i].col].removeTile();
-			const targetRowCol = this.getCounterclockwiseRowCol(rowAndCol, rowCols[i]);
+			const tile = this.cells[rowCol.row][rowCol.col].removeTile();
+			const targetRowCol = this.getCounterclockwiseRowCol(rowAndCol, rowCol);
 			if (this.isValidRowCol(targetRowCol)) {
 				results.push([tile, targetRowCol]);
 			}
@@ -704,11 +720,10 @@ export class SkudPaiShoBoard {
 	 */
 	undoPlaceKnotweed(tile, notationPoint) {
 		const rowAndCol = notationPoint.rowAndColumn;
-		const rowCols = this.getSurroundingRowAndCols(rowAndCol);
 
 		// Undo "Drain" on surrounding tiles
-		for (let i = 0; i < rowCols.length; i++) {
-			const bp = this.cells[rowCols[i].row][rowCols[i].col];
+		for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+			const bp = this.cells[rowCol.row][rowCol.col];
 			bp.restoreTile();
 		}
 	}
@@ -736,10 +751,9 @@ export class SkudPaiShoBoard {
 			boardPoint.putTile(tileRemovedWithBoat);
 			tileManager.playedTile(tileRemovedWithBoat);
 
-			const rowCols = this.getSurroundingRowAndCols(rowAndCol);
 			// "Restore" surrounding tiles
-			for (let i = 0; i < rowCols.length; i++) {
-				const bp = this.cells[rowCols[i].row][rowCols[i].col];
+			for (const rowCol of this.neighborCells[rowAndCol.row][rowAndCol.col]) {
+				const bp = this.cells[rowCol.row][rowCol.col];
 				bp.restoreTile();
 			}
 
@@ -802,27 +816,6 @@ export class SkudPaiShoBoard {
 		}
 	}
 
-	/**
-	 * Gets array of positions adjacent to given rowAndCol, used for various accent tile abilities
-	 * @param {RowAndColumn} rowAndCol - Center point where accent tile is placed
-	 * @returns {RowAndColumn[]} Surrounding RowAndColumn positions
-	 */
-	getSurroundingRowAndCols(rowAndCol) {
-		const rowAndCols = [];
-		for (let row = rowAndCol.row - 1; row <= rowAndCol.row + 1; row++) {
-			for (let col = rowAndCol.col - 1; col <= rowAndCol.col + 1; col++) {
-				if (row === rowAndCol.row && col === rowAndCol.col) continue;	// Skip given center point
-				if (row < 0 || col < 0 || row >= 17 || col >= 17) continue;	// Skip points outside range of the grid
-
-				const boardPoint = this.cells[row][col];
-				if (boardPoint.isType(NON_PLAYABLE_BIT)) continue;	// Skip non-playable points
-
-				rowAndCols.push(new RowAndColumn(row, col));
-			}
-		}
-		return rowAndCols;
-	}
-
 	/** Refresh rows and columns where harmonies are blocked by rock tiles */
 	refreshRockRowAndCols() {
 		this.rockRowAndCols = [];
@@ -858,8 +851,8 @@ export class SkudPaiShoBoard {
 		if (boardPoint.hasTile()) {
 			return false;
 		}
-		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-		for (const rowCol of rowCols) {
+		
+		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 			const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === POND) {
 				return true;
@@ -969,10 +962,7 @@ export class SkudPaiShoBoard {
 		if (!newKnotweedRules) return; // Knotweed traps instead of draining with old knotweed rules
 		if (boardPoint.tile.accentType !== KNOTWEED) return;
 
-		// Get surrounding RowAndColumn values
-		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-
-		for (const rowCol of rowCols) {
+		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 			const bp = this.cells[rowCol.row][rowCol.col];
 			if (bp.hasTile() && !bp.isType(GATE_BIT) && bp.tile.type !== ACCENT_TILE && bp.tile.specialFlowerType !== ORCHID) {
 				bp.tile.drained = true;
@@ -989,10 +979,7 @@ export class SkudPaiShoBoard {
 
 		const orchidOwner = boardPoint.tile.ownerName;
 
-		// Get surrounding RowAndColumn values
-		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-
-		for (const rowCol of rowCols) {
+		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 			const bp = this.cells[rowCol.row][rowCol.col];
 			if (bp.hasTile() && !bp.isType(GATE_BIT)) {
 				if (bp.tile.ownerName !== orchidOwner && bp.tile.type !== ACCENT_TILE) {
@@ -1120,8 +1107,7 @@ export class SkudPaiShoBoard {
 		if (tile.ownerName === otherTile.ownerName) return false;
 
 		// Does end point surround Bamboo? Cannot capture tiles surrounding Bamboo
-		const surroundingRowCols = this.getSurroundingRowAndCols(boardPointEnd);
-		for (const surroundingRowCol of surroundingRowCols) {
+		for (const surroundingRowCol of this.neighborCells[boardPointEnd.row][boardPointEnd.col]) {
 			const surroundingPoint = this.cells[surroundingRowCol.row][surroundingRowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === BAMBOO) return false;
 		}
@@ -1473,8 +1459,7 @@ export class SkudPaiShoBoard {
 	 */
 	getSurroundingLionTurtleTiles(boardPoint) {
 		const surroundingLionTurtleTiles = [];
-		const rowCols = this.getSurroundingRowAndCols(boardPoint);
-		for (const rowCol of rowCols) {
+		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 			const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === LION_TURTLE) {
 				surroundingLionTurtleTiles.push(surroundingPoint.tile);
@@ -1709,13 +1694,12 @@ export class SkudPaiShoBoard {
 		}
 		if (!this.pondHasBeenPlaced) return this.legalMoves;
 
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
+		for (const cellRow of this.cells) {
+			for (const bp of cellRow) {
 				// If Pond, mark surrounding points
 				if (tile && bp.hasTile() && bp.tile.accentType === POND) {
-					const rowCols = this.getSurroundingRowAndCols(bp);
-					for (let i = 0; i < rowCols.length; i++) {
-						const surroundingPoint = this.cells[rowCols[i].row][rowCols[i].col];
+					for (const rowCol of this.neighborCells[bp.row][bp.col]) {
+						const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 						if (surroundingPoint.canHoldTile(tile)) {
 							// If does not cause clash...
 							const newBoard = this.getCopy();
@@ -1809,9 +1793,7 @@ export class SkudPaiShoBoard {
 
 		if (newKnotweedRules) {
 			// New rules: All surrounding points
-			const rowCols = this.getSurroundingRowAndCols(boardPoint);
-
-			for (const rowCol of rowCols) {
+			for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 				const boardPointEnd = this.cells[rowCol.row][rowCol.col];
 				if (this.canTransportTileToPointWithBoat(boardPoint, boardPointEnd)) {
 					boardPointEnd.addType(POSSIBLE_MOVE_BIT);
