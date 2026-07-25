@@ -1340,28 +1340,26 @@ export class SkudPaiShoBoard {
 		// simpleRocks: Rocks don't disable Harmonies.
 		if (simpleRocks || simplest) return false;	
 
-		this.rockRowAndCols.forEach(function(rowAndCol) {
-			if (isRow && rowAndCol.row === rowOrColNum) return true;
-			if (!isRow && rowAndCol.col === rowOrColNum) return true;
-		});
+		for (const rowCol of this.rockRowAndCols) {
+			if (isRow && rowCol.row === rowOrColNum) return true;
+			if (!isRow && rowCol.col === rowOrColNum) return true;
+		}
 		return false;
 	}
 
 	/** Refreshes betweenHarmony/betweenHarmonyHost/betweenHarmonyGuest for all SkudPaiShoBoardPoints */
 	markSpacesBetweenHarmonies() {
 		// Unmark all
-		this.cells.forEach(function(row) {
-			row.forEach(function(boardPoint) {
+		for (const cellRow of this.cells) {
+			for (const boardPoint of cellRow) {
 				boardPoint.betweenHarmony = false;
 				boardPoint.betweenHarmonyHost = false;
 				boardPoint.betweenHarmonyGuest = false;
-			});
-		});
+			}
+		}
 
 		// Go through harmonies, mark the spaces between them
-		const self = this;
-		this.harmonyManager.harmonies.forEach(function(harmony) {
-			// harmony.tile1Pos.row (for example)
+		for (const harmony of this.harmonyManager.harmonies) {
 			// Harmony will be in same row or same col
 			if (harmony.tile1Pos.row === harmony.tile2Pos.row) {
 				// Get smaller of the two
@@ -1369,11 +1367,11 @@ export class SkudPaiShoBoard {
 				const firstCol = Math.min(harmony.tile1Pos.col, harmony.tile2Pos.col);
 				const lastCol = Math.max(harmony.tile1Pos.col, harmony.tile2Pos.col);
 				for (let col = firstCol + 1; col < lastCol; col++) {
-					self.cells[row][col].betweenHarmony = true;
+					this.cells[row][col].betweenHarmony = true;
 					if (harmony.hasOwner(GUEST)) {
-						self.cells[row][col].betweenHarmonyGuest = true;
+						this.cells[row][col].betweenHarmonyGuest = true;
 					}else if (harmony.hasOwner(HOST)) {
-						self.cells[row][col].betweenHarmonyHost = true;
+						this.cells[row][col].betweenHarmonyHost = true;
 					}
 				}
 			} else if (harmony.tile2Pos.col === harmony.tile2Pos.col) {
@@ -1382,15 +1380,15 @@ export class SkudPaiShoBoard {
 				const firstRow = Math.min(harmony.tile1Pos.row, harmony.tile2Pos.row);
 				const lastRow = Math.max(harmony.tile1Pos.row, harmony.tile2Pos.row);
 				for (let row = firstRow + 1; row < lastRow; row++) {
-					self.cells[row][col].betweenHarmony = true;
+					this.cells[row][col].betweenHarmony = true;
 					if (harmony.hasOwner(GUEST)) {
-						self.cells[row][col].betweenHarmonyGuest = true;
+						this.cells[row][col].betweenHarmonyGuest = true;
 					} else if (harmony.hasOwner(HOST)) {
-						self.cells[row][col].betweenHarmonyHost = true;
+						this.cells[row][col].betweenHarmonyHost = true;
 					}
 				}
 			}
-		});
+		}
 	}
 
 	/** Refreshes this.harmonyManager and checks for winner */
@@ -1408,7 +1406,9 @@ export class SkudPaiShoBoard {
 				// Check for harmonies!
 				const tileHarmonies = this.getTileHarmonies(boardPoint);
 				// Add harmonies
-				this.harmonyManager.addHarmonies(tileHarmonies);
+				for (let i = 0; i < tileHarmonies.length; i++) {
+					this.harmonyManager.addHarmony(tileHarmonies[i]);
+				}
 
 				boardPoint.tile.harmonyOwners = [];
 

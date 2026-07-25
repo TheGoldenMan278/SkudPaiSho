@@ -298,8 +298,8 @@ SkudStrategicAI.prototype.evaluateMove = function(game, move) {
 	score += harmonyDelta * 30;
 
 	// Harmonies crossing center are more valuable
-	var centerHarmBefore = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
-	var centerHarmAfter = copyGame.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
+	var centerHarmBefore = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player, true);
+	var centerHarmAfter = copyGame.board.harmonyManager.getNumCrossingCenterForPlayer(this.player, true);
 
 	if (centerHarmAfter > centerHarmBefore) {
 		score += 60;
@@ -407,8 +407,8 @@ SkudStrategicAI.prototype.detectOpponentThreats = function(game, opponent) {
 	}
 
 	// Check opponent's center-crossing harmonies (endgame threat)
-	var oppCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(opponent);
-	var ourCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
+	var oppCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(opponent, true);
+	var ourCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player, true);
 
 	if (oppCenterHarm > ourCenterHarm + 2) {
 		threatLevel += 15;

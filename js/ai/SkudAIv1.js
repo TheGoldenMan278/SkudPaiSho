@@ -506,7 +506,7 @@ SkudAIv1.prototype.getLongestHarmonyRingLength = function(game, player) {
 };
 
 SkudAIv1.prototype.getNumHamoniesCrossingCenter = function(game, player) {
-	return game.board.harmonyManager.getNumCrossingCenterForPlayer(player);
+	return game.board.harmonyManager.getNumCrossingCenterForPlayer(player, true);
 };
 
 SkudAIv1.prototype.ensurePlant = function(move, game, player) {

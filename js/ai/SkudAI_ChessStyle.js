@@ -306,7 +306,7 @@ SkudChessAI.prototype.evaluate = function(game) {
 	score += (numHarmonies * 30) - (oppNumHarmonies * 25);
 
 	// Harmonies crossing center are more valuable
-	var numCenterHarmonies = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
+	var numCenterHarmonies = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player, true);
 	score += 30 * numCenterHarmonies;
 
 	// === RING FORMATION ===
@@ -394,8 +394,8 @@ SkudChessAI.prototype.detectOpponentThreats = function(game, opponent) {
 	}
 
 	// Check opponent's center-crossing harmonies (endgame threat)
-	var oppCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(opponent);
-	var ourCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player);
+	var oppCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(opponent, true);
+	var ourCenterHarm = game.board.harmonyManager.getNumCrossingCenterForPlayer(this.player, true);
 
 	if (oppCenterHarm > ourCenterHarm + 2) {
 		threatLevel += 15;
