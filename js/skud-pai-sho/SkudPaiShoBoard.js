@@ -1257,21 +1257,45 @@ export class SkudPaiShoBoard {
 			boardPointEnd.putTile(boardPointStart.removeTile());
 		}
 
+		// Now, analyze board for disharmonies (clashes)
 		let clashFound = false;
+		// Check if tile creates a disharmony in the point it moves to
+		clashFound = this.hasDisharmony(boardPointEnd);
 
-		// Now, analyze board for disharmonies
-		for (let row = 0; row < this.cells.length; row++) {
-			for (let col = 0; col < this.cells[row].length; col++) {
-				const boardPoint = this.cells[row][col];
-				if (boardPoint.hasTile()) {
-					// Check for Disharmonies!
-					if (this.hasDisharmony(boardPoint)) {
-						clashFound = true;
-						break;
+		// Check if tile revealed a disharmony in the row/col it moved from
+		let rowRevealedTile, colRevealedTile;
+		for (const direction of DIRECTIONS) {
+			if (clashFound) break;
+			// Length of board (16) is the max we could possibly have to move before breaking
+			for (let i = 1; i <= 16; i++) {
+				const row = boardPointStart.row + (direction[0] * i);
+				const col = boardPointStart.col + (direction[1] * i);
+
+				// Boundary check to ensure we stay inside the 2D array
+				if (row < 0 || row >= 17 || col < 0 || col >= 17) break;
+
+				let newBoardPoint = this.cells[row][col];
+
+				// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
+				if (newBoardPoint.isType(NON_PLAYABLE_BIT) || newBoardPoint.isType(GATE_BIT)) break;
+
+				if (newBoardPoint.hasTile()) {
+					if (newBoardPoint.row === boardPointStart.row) { // rowRevealedTile
+						if (rowRevealedTile && boardPointStart.tile.clashesWith(rowRevealedTile)) {
+							clashFound = true;
+						} else {
+							rowRevealedTile = boardPointStart.tile;
+						}
+					} else { // colRevealedTile
+						if (colRevealedTile && boardPointStart.tile.clashesWith(colRevealedTile)) {
+							clashFound = true;
+						} else {
+							colRevealedTile = boardPointStart.tile;
+						}
 					}
+					break; // We can stop this direction if we find a tile to analyze
 				}
 			}
-			if (clashFound) break;
 		}
 
 		// Put tiles back the way they were if needed
