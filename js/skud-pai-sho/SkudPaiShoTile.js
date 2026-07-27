@@ -45,6 +45,7 @@ export function tileIdIncrement() {
  * @property {string} basicColorCode - "R" or "W": Red or White for Basic Flowers
  * @property {string} basicValue - "1", "2", or "3": Movement amount for Basic Flowers
  * @property {string} basicColorName - "RED" or "WHITE" for Basic Flowers
+ * @property {Set<string>} harmonyOwners - Can contain "HOST" or "GUEST"
  * @property {SkudPaiShoBoardPoint?} bp - Position of tile if it is placed and not captured
  */
 export class SkudPaiShoTile {
@@ -85,6 +86,9 @@ export class SkudPaiShoTile {
 		} else {
 			debug("Error: Unknown tile type");
 		}
+
+		/** @type {Set<string>} */
+		this.harmonyOwners = new Set()
 		/** @type {SkudPaiShoBoardPoint?} */
 		this.bp = null;
 	}

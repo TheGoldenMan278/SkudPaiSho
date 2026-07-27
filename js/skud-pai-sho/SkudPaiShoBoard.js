@@ -79,6 +79,7 @@ export class SkudPaiShoBoard {
 		this.harmonyManager = new SkudPaiShoHarmonyManager();
 
 		this.pondHasBeenPlaced = false; // TODO: Replace with more efficient method of tracking ponds
+		this.lionTurtleHasBeenPlaced = false; // TODO: Replace with more efficient method of tracking lion turtles
 		this.rockRowAndCols = [];
 		this.playedWhiteLotusTiles = [];
 		/** @type {SkudPaiShoBoardPoint[]} */
@@ -609,6 +610,7 @@ export class SkudPaiShoBoard {
 
 		// Place tile
 		boardPoint.putTile(tile);
+		this.lionTurtleHasBeenPlaced = true;
 	}
 
 	// =========================================================
@@ -1439,45 +1441,32 @@ export class SkudPaiShoBoard {
 					this.harmonyManager.addHarmony(tileHarmonies[i]);
 				}
 
-				boardPoint.tile.harmonyOwners = [];
-
+				// Can skip aesthetic harmony owner colors on copy board for AI player thinking
+				if (this.isCopy) continue;
+				
+				boardPoint.tile.harmonyOwners.clear();
 				for (let i = 0; i < tileHarmonies.length; i++) {
 					for (let j = 0; j < tileHarmonies[i].owners.length; j++) {
 						const harmonyOwnerName = tileHarmonies[i].owners[j].ownerName;
 						const harmonyTile1 = tileHarmonies[i].tile1;
 						const harmonyTile2 = tileHarmonies[i].tile2;
 
-						if (!harmonyTile1.harmonyOwners) {
-							harmonyTile1.harmonyOwners = [];
-						}
-						if (!harmonyTile2.harmonyOwners) {
-							harmonyTile2.harmonyOwners = [];
-						}
-
-						if (!harmonyTile1.harmonyOwners.includes(harmonyOwnerName)) {
-							harmonyTile1.harmonyOwners.push(harmonyOwnerName);
-						}
-						if (!harmonyTile2.harmonyOwners.includes(harmonyOwnerName)) {
-							harmonyTile2.harmonyOwners.push(harmonyOwnerName);
-						}
+						harmonyTile1.harmonyOwners.add(harmonyOwnerName);
+						harmonyTile2.harmonyOwners.add(harmonyOwnerName);
 					}
 				}
 			}
 		}
 
 		this.markSpacesBetweenHarmonies();
-
 		// this.harmonyManager.printHarmonies();
 
 		this.winners = [];
-		const self = this;
 		const harmonyRingOwners = this.harmonyManager.harmonyRingExists();
-		if (harmonyRingOwners.length > 0) {
-			harmonyRingOwners.forEach(function(player) {
-				if (!self.winners.includes(player)) {
-					self.winners.push(player);
-				}
-			});
+		for (const player of harmonyRingOwners) { // Won't execute if length of harmonyRingOwners is 0
+			if (!this.winners.includes(player)) {
+				this.winners.push(player);
+			}
 		}
 	}
 
@@ -1488,6 +1477,8 @@ export class SkudPaiShoBoard {
 	 */
 	getSurroundingLionTurtleTiles(boardPoint) {
 		const surroundingLionTurtleTiles = [];
+		if (!this.lionTurtleHasBeenPlaced) return surroundingLionTurtleTiles;
+
 		for (const rowCol of this.neighborCells[boardPoint.row][boardPoint.col]) {
 			const surroundingPoint = this.cells[rowCol.row][rowCol.col];
 			if (surroundingPoint.hasTile() && surroundingPoint.tile.accentType === LION_TURTLE) {

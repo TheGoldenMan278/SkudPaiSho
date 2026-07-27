@@ -250,18 +250,18 @@ export class SkudPaiShoActuator {
 			const srcValue = getSkudTilesSrcPath();
 			theImg.src = srcValue + boardPoint.tile.getImageName() + ".png";
 
-			if (boardPoint.tile.harmonyOwners 
+			if (boardPoint.tile.harmonyOwners.size
 					&& !gameOptionEnabled(NO_HARMONY_VISUAL_AIDS)
 					&& getUserGamePreference(SkudPaiShoController.hideHarmonyAidsKey) !== "true") {
 				if (this.animationOn && (flags.didBonusMove || flags.wasArranged)) {
 					setTimeout(() => {//Delay harmony outline until after a piece has moved
-						for (let i = 0; i < boardPoint.tile.harmonyOwners.length; i++) {
-							theDiv.classList.add(boardPoint.tile.harmonyOwners[i] + "harmony");
+						for (const harmonyOwner of boardPoint.tile.harmonyOwners) {
+							theDiv.classList.add(harmonyOwner + "harmony");
 						}
 					}, ((flags.didBonusMove ? 2 : 1) - moveAnimationBeginStep) * pieceAnimationLength);
 				} else {
-					for (let i = 0; i < boardPoint.tile.harmonyOwners.length; i++) {
-						theDiv.classList.add(boardPoint.tile.harmonyOwners[i] + "harmony");
+					for (const harmonyOwner of boardPoint.tile.harmonyOwners) {
+						theDiv.classList.add(harmonyOwner + "harmony");
 					}
 				}
 			}

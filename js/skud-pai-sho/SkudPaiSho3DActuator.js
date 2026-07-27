@@ -160,7 +160,7 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 			this.tilesGroup.add(tileGroup);
 
 			// Harmony glow
-			if (tile.harmonyOwners
+			if (tile.harmonyOwners.size
 				&& !gameOptionEnabled(NO_HARMONY_VISUAL_AIDS)
 				&& getUserGamePreference(SkudPaiShoController.hideHarmonyAidsKey) !== "true") {
 				if (this.animationOn && (flags.didBonusMove || flags.wasArranged)) {
@@ -320,11 +320,11 @@ export class SkudPaiSho3DActuator extends PaiSho3DActuator {
 	// --- Skud-specific Visual Effects ---
 
 	addHarmonyGlow(tile, x, z) {
-		if (!tile.harmonyOwners || tile.harmonyOwners.length === 0) return;
+		if (tile.harmonyOwners.size === 0) return;
 
 		let glowColor;
-		const hasHost = tile.harmonyOwners.includes("HOST");
-		const hasGuest = tile.harmonyOwners.includes("GUEST");
+		const hasHost = tile.harmonyOwners.has("HOST");
+		const hasGuest = tile.harmonyOwners.has("GUEST");
 
 		if (hasHost && hasGuest) {
 			glowColor = COLOR_COMBINED_HARMONY;
