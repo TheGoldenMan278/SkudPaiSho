@@ -70,8 +70,9 @@ export class SkudPaiShoBoard {
 	// =========================================================
 	// Constructor Functions
 	// =========================================================
-	constructor() {
-		this.size = new RowAndColumn(17, 17);
+	constructor(isCopy = false) {
+		this.isCopy = isCopy;
+
 		this.cells = this.initCells();
 		this.neighborCells = this.initNeighborCells();
 
@@ -1373,6 +1374,10 @@ export class SkudPaiShoBoard {
 
 	/** Refreshes betweenHarmony/betweenHarmonyHost/betweenHarmonyGuest for all SkudPaiShoBoardPoints */
 	markSpacesBetweenHarmonies() {
+		// This function is purely for visuals of lines between harmonies
+		// This means we can skip it on copy boards used only behind the scenes for AI player thinking
+		if (this.isCopy) return;
+
 		// Unmark all
 		for (const cellRow of this.cells) {
 			for (const boardPoint of cellRow) {
@@ -1877,7 +1882,7 @@ export class SkudPaiShoBoard {
 	 * @returns {SkudPaiShoBoard}
 	 */
 	getCopy() {
-		const copyBoard = new SkudPaiShoBoard();
+		const copyBoard = new SkudPaiShoBoard(true);
 
 		// cells
 		for (let row = 0; row < this.cells.length; row++) {
