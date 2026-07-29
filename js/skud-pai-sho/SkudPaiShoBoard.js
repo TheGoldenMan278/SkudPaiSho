@@ -75,6 +75,7 @@ export class SkudPaiShoBoard {
 
 		this.cells = this.initCells();
 		this.neighborCells = this.initNeighborCells();
+		// this.inLineCells = this.initInLineCells();
 
 		this.harmonyManager = new SkudPaiShoHarmonyManager();
 
@@ -151,7 +152,7 @@ export class SkudPaiShoBoard {
 
 	/**
 	 * Generates 2D array of RowAndColumn lists representing each cell's in bounds neighbors
-	 * @returns {RowAndColumn[][][]} Cell Neighbors (2D arra of RowAndColumn lists)
+	 * @returns {RowAndColumn[][][][]} Cell Neighbors (2D array of 4 RowAndColumn lists, one for each direction)
 	 */
 	initNeighborCells() {
 		const neighborCells = [];
@@ -180,6 +181,47 @@ export class SkudPaiShoBoard {
 
 		return neighborCells;
 	}
+
+	/**
+	 * Generates 2D array of RowAndColumn lists representing all points in the same row or col as the cell
+	 * Note: Checks that the points are in play (Not NON_PLAYABLE or GATE)
+	 * @returns {RowAndColumn[][][][]} Cell Neighbors (2D arra of RowAndColumn lists)
+	 */
+	// initInLineCells() {
+	// 	const inLineCells = [];
+
+	// 	for (let row = 0; row < this.cells.length; row++) {
+	// 		const thisRow = [];
+	// 		for (let col = 0; col < this.cells[row].length; col++) {
+	// 			const inLineList = [];
+
+	// 			// Loop through in line cells in all 4 directions
+	// 			for (const direction of DIRECTIONS) {
+	// 				const thisDirection = [];
+	// 				// Length of board (16) is the max we could possibly have to move before breaking
+	// 				for (let i = 1; i <= 16; i++) {
+	// 					const rowInLine = row + (direction[0] * i);
+	// 					const colInLine = col + (direction[1] * i);
+	// 					const rowColInLine = new RowAndColumn(rowInLine, colInLine)
+
+	// 					if (!this.isValidRowCol(rowColInLine)) break; // Can stop once we go outside the board grid
+
+	// 					const boardPoint = this.cells[row][col];
+
+	// 					// Can stop search if we reach gate or unplayable point since we can guarantee no tiles past this
+	// 					if (boardPoint.isType(NON_PLAYABLE_BIT) || boardPoint.isType(GATE_BIT)) break;
+
+	// 					thisDirection.push(rowColInLine);
+	// 				}
+	// 				inLineList.push(thisDirection);
+	// 			}
+	// 			thisRow.push(inLineList);
+	// 		}
+	// 		inLineCells.push(thisRow);
+	// 	}
+
+	// 	return inLineCells;
+	// }
 
 	// =========================================================
 	// Tile Placement Functions
@@ -212,6 +254,9 @@ export class SkudPaiShoBoard {
 			} else if (tile.accentType === LION_TURTLE) {
 				this.placeLionTurtle(tile, notationPoint);
 			}
+			// Placing accent tile can change trapped/drained state and harmonies
+			this.flagAllTrappedAndDrainedTiles();
+			this.analyzeHarmonies();
 		} else {
 			// Don't need any special effects when placing flowers
 			const point = this.cells[notationPoint.rowAndColumn.row][notationPoint.rowAndColumn.col];
@@ -219,11 +264,14 @@ export class SkudPaiShoBoard {
 			if (tile.specialFlowerType === WHITE_LOTUS) {
 				this.playedWhiteLotusTiles.push(tile);
 			}
+
+			// Only need to refresh trapped/drained/harmonies if played next to pond (not on gate)
+			if (!point.isType(GATE_BIT)) {
+				this.flagAllTrappedAndDrainedTiles();
+				this.analyzeHarmonies();
+			}
 		}
-		// Things to do after a tile is placed
-		tileManager.playedTile(tile);
-		this.flagAllTrappedAndDrainedTiles();
-		this.analyzeHarmonies();
+		tileManager.playedTile(tile); // Track tiles in play
 
 		if (tile.accentType === BOAT) {
 			return {
@@ -625,7 +673,8 @@ export class SkudPaiShoBoard {
 	 * @returns {?Object<string, SkudPaiShoTile>} - Optional tile removed by boat
 	 */
 	undoPlaceTile(endPoint, tileManager, extraBoatPoint, tileRemovedWithBoat) {
-		const tile = this.cells[endPoint.rowAndColumn.row][endPoint.rowAndColumn.col].removeTile();
+		const bp = this.cells[endPoint.rowAndColumn.row][endPoint.rowAndColumn.col];
+		const tile = bp.removeTile();
 
 		// If undoing boat, may not have tile in endpoint if used to remove accent tile
 		if (tile === null) {
@@ -658,13 +707,16 @@ export class SkudPaiShoBoard {
 			} else if (tile.accentType === LION_TURTLE) {
 				debug("AI undo moves currently doesn't work with expansion using Lion Turtle")
 			}
-		} else if (tile.specialFlowerType === WHITE_LOTUS) {
-			const rowColIdx = this.playedWhiteLotusTiles.findIndex(lotusTile => lotusTile.id === tile.id)
-			if (rowColIdx === -1) {
-				console.error("Tried to undo lotus tile that didn't exist:", tile)
-			} else {
-				this.playedWhiteLotusTiles.splice(rowColIdx, 1);
+		} else {
+			if (tile.specialFlowerType === WHITE_LOTUS) {
+				const rowColIdx = this.playedWhiteLotusTiles.findIndex(lotusTile => lotusTile.id === tile.id)
+				if (rowColIdx === -1) {
+					console.error("Tried to undo lotus tile that didn't exist:", tile)
+				} else {
+					this.playedWhiteLotusTiles.splice(rowColIdx, 1);
+				}
 			}
+			if (bp.isType(GATE_BIT)) return; // Don't need to refresh flags/harmonies unless played flower on pond (not gate)
 		}
 		// Things to do after a tile is undone
 		this.flagAllTrappedAndDrainedTiles();
@@ -1432,10 +1484,10 @@ export class SkudPaiShoBoard {
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
 				const boardPoint = this.cells[row][col];
-				if (!boardPoint.hasTile()) continue;
-
 				// Check for harmonies!
 				const tileHarmonies = this.getTileHarmonies(boardPoint);
+				if (tileHarmonies.length === 0) continue;
+
 				// Add harmonies
 				for (let i = 0; i < tileHarmonies.length; i++) {
 					this.harmonyManager.addHarmony(tileHarmonies[i]);
@@ -1496,8 +1548,8 @@ export class SkudPaiShoBoard {
 	getTileHarmonies(boardPoint) {
 		const tileHarmonies = [];
 		
-		// Gates and open points never form harmony
-		if (boardPoint.isType(GATE_BIT) || !boardPoint.hasTile()) return tileHarmonies;
+		// Gates, non-playable points, and open points never form harmony
+		if (boardPoint.isType(GATE_BIT) || boardPoint.isType(NON_PLAYABLE_BIT) || !boardPoint.hasTile()) return tileHarmonies;
 
 		const tile = boardPoint.tile;
 		const surroundingLionTurtleTiles = this.getSurroundingLionTurtleTiles(boardPoint);
