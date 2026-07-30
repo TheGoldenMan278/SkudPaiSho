@@ -282,9 +282,9 @@ export class SkudPaiShoBoard {
 				this.playedWhiteLotusTiles.push(tile);
 			}
 
-			// Only need to refresh trapped/drained/harmonies if played next to pond (not on gate)
+			this.flagAllTrappedAndDrainedTiles();
+			// Only need to refresh harmonies if played next to pond (not on gate)
 			if (!point.isType(GATE_BIT)) {
-				this.flagAllTrappedAndDrainedTiles();
 				this.analyzeHarmonies();
 			}
 		}
@@ -724,6 +724,7 @@ export class SkudPaiShoBoard {
 			} else if (tile.accentType === LION_TURTLE) {
 				debug("AI undo moves currently doesn't work with expansion using Lion Turtle")
 			}
+			this.analyzeHarmonies();
 		} else {
 			if (tile.specialFlowerType === WHITE_LOTUS) {
 				const rowColIdx = this.playedWhiteLotusTiles.findIndex(lotusTile => lotusTile.id === tile.id)
@@ -733,11 +734,11 @@ export class SkudPaiShoBoard {
 					this.playedWhiteLotusTiles.splice(rowColIdx, 1);
 				}
 			}
-			if (bp.isType(GATE_BIT)) return; // Don't need to refresh flags/harmonies unless played flower on pond (not gate)
+			if (bp.isType(GATE_BIT)) return; // Don't need to refresh harmonies unless played flower on pond (not gate)
+			this.analyzeHarmonies();
 		}
-		// Things to do after a tile is undone
-		this.flagAllTrappedAndDrainedTiles();
-		this.analyzeHarmonies();
+		
+		this.flagAllTrappedAndDrainedTiles(); // Undoing any tile could affect flags
 	}
 
 	/**
@@ -960,10 +961,6 @@ export class SkudPaiShoBoard {
 		const tile = boardPointStart.removeTile();
 		const capturedTile = boardPointEnd.tile;
 
-		if (!tile) {
-			debug("Error: No tile to move!");
-		}
-
 		const error = boardPointEnd.putTile(tile);
 
 		if (error) {
@@ -990,18 +987,24 @@ export class SkudPaiShoBoard {
 
 	/** Refreshes if all SkudPaiShoBoardPoints are trapped by orchid or drained by knotweed */
 	flagAllTrappedAndDrainedTiles() {
-		// First, untrap
+		let hasOrchid = false, hasKnotweed = false;
+
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
 				const bp = this.cells[row][col];
-				if (bp.hasTile()) {
-					bp.tile.trapped = false;
-					if (newKnotweedRules) {
-						bp.tile.drained = false;
-					}
-				}
+				if (!bp.hasTile()) continue;
+
+				bp.tile.trapped = false;
+				if (newKnotweedRules) bp.tile.drained = false;
+
+				if (bp.tile.specialFlowerType === ORCHID) hasOrchid = true;
+				if (newKnotweedRules && bp.tile.accentType === KNOTWEED) hasKnotweed = true;
 			}
 		}
+
+		// Don't need to reapply if no knotweeds or orchids exist
+		if (!hasOrchid && !hasKnotweed) return;
+
 		// Find Orchid/Knotweed tiles, then check surrounding opposite-player Basic Flower tiles and flag them
 		for (let row = 0; row < this.cells.length; row++) {
 			for (let col = 0; col < this.cells[row].length; col++) {
