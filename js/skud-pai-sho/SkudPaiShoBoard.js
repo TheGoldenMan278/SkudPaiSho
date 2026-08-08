@@ -1389,27 +1389,31 @@ export class SkudPaiShoBoard {
 		const endRow = boardPointEnd.row;
 		const endCol = boardPointEnd.col;
 
-		if (startRow === endRow && startCol === endCol) return true; // Successfully reached end of path
+		const stack = [[startRow, startCol, numMoves]];
+		const visited = new Set();
 
-		if (numMoves <= 0) return false; // Ran out of moves without reaching end of path
+		while (stack.length > 0) {
+			const [row, col, movesRemaining] = stack.pop();
+			const stateKey = row + "," + col + "," + movesRemaining;
+			if (visited.has(stateKey)) continue;
+			visited.add(stateKey);
 
-		const minMoves = Math.abs(startRow - endRow) + Math.abs(startCol - endCol);
-		if (minMoves === 1) return true; // We are adjacent to end point, must be reachable
+			if (row === endRow && col === endCol) return true;
+			if (movesRemaining <= 0) continue;
 
-		// Recursively check for open path in all 4 directions
-		for (const direction of DIRECTIONS) {
-			const moveRow = startRow + direction[0];
-			const moveCol = startCol + direction[1];
+			const nextMoves = movesRemaining - 1;
+			for (const direction of DIRECTIONS) {
+				const moveRow = row + direction[0];
+				const moveCol = col + direction[1];
 
-			// Boundary check to ensure we stay inside the board
-			if (moveRow < 0 || moveRow >= 17 || moveCol < 0 || moveCol >= 17) continue;
+				// Boundary check to ensure we stay inside the board
+				if (moveRow < 0 || moveRow >= 17 || moveCol < 0 || moveCol >= 17) continue;
 
-			const movePoint = this.cells[moveRow][moveCol];
-			if (movePoint.hasTile()) continue;
+				const movePoint = this.cells[moveRow][moveCol];
+				if (moveRow === endRow && moveCol === endCol) return true;
+				if (movePoint.hasTile()) continue;
 
-			// Check for path recursively, decrementing available movement
-			if (this.verifyAbleToReach(movePoint, boardPointEnd, numMoves - 1)) {
-				return true;
+				stack.push([moveRow, moveCol, nextMoves]);
 			}
 		}
 
