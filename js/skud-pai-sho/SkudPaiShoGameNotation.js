@@ -43,8 +43,9 @@ export class SkudPaiShoNotationMove {
 		const parts = this.fullMoveText.split(".");
 
 		const moveNumAndPlayer = parts[0];
+		const moveText = parts[1] || "";
 
-		this.moveNum = parseInt(moveNumAndPlayer.slice(0, -1));
+		this.moveNum = parseInt(moveNumAndPlayer.slice(0, -1), 10);
 		this.playerCode = moveNumAndPlayer.charAt(moveNumAndPlayer.length - 1);
 
 		// Get player (Guest or Host)
@@ -54,7 +55,6 @@ export class SkudPaiShoNotationMove {
 			this.player = HOST;
 		}
 
-		const moveText = parts[1];
 		this.moveTextOnly = moveText;
 
 		// If no move text, ignore and move on to next
@@ -81,6 +81,8 @@ export class SkudPaiShoNotationMove {
 			// Planting move stuff
 			const char1 = moveText.charAt(1);
 			this.plantedFlowerType = char0 + "" + char1;
+			const openParenIndex = moveText.indexOf('(');
+			const closeParenIndex = moveText.indexOf(')');
 
 			if (moveText.charAt(2) === '(') {
 				// debug("parens checks out");
@@ -89,8 +91,8 @@ export class SkudPaiShoNotationMove {
 				this.valid = false;
 			}
 
-			if (moveText.endsWith(')')) {
-				this.endPoint = new NotationPoint(moveText.substring(moveText.indexOf('(')+1, moveText.indexOf(')')));
+			if (moveText.endsWith(')') && openParenIndex !== -1 && closeParenIndex > openParenIndex) {
+				this.endPoint = new NotationPoint(moveText.substring(openParenIndex + 1, closeParenIndex));
 			} else {
 				this.valid = false;
 			}
@@ -98,31 +100,34 @@ export class SkudPaiShoNotationMove {
 			// Arranging move stuff
 
 			// Get the two points from string like: (-8,0)-(-6,3)
-			const parts = moveText.substring(moveText.indexOf('(')+1).split(')-(');
+			const notationParts = moveText.substring(moveText.indexOf('(') + 1).split(')-(');
+			const firstPart = notationParts[0];
+			const secondPart = notationParts[1] || "";
 
-			// parts.forEach(function(val){console.log(val);});
+			this.startPoint = new NotationPoint(firstPart);
 
-			this.startPoint = new NotationPoint(parts[0]);
+			// secondPart may have harmony bonus
+			const endText = secondPart.substring(0, secondPart.indexOf(')'));
+			this.endPoint = new NotationPoint(endText);
 
-			// parts[1] may have harmony bonus
-			this.endPoint = new NotationPoint(parts[1].substring(0, parts[1].indexOf(')')));
-
-			if (parts[1].includes('+') || parts[1].includes('_')) {
+			if (secondPart.includes('+') || secondPart.includes('_')) {
 				// Harmony Bonus!
 				let bonusChar = '+';
-				if (parts[1].includes('_')) {
+				if (secondPart.includes('_')) {
 					bonusChar = '_';
 				}
 				// Get only that part:
-				const bonus = parts[1].substring(parts[1].indexOf(bonusChar)+1);
+				const bonus = secondPart.substring(secondPart.indexOf(bonusChar) + 1);
+				const bonusOpenParenIndex = bonus.indexOf('(');
+				const bonusCloseParenIndex = bonus.indexOf(')');
 				
-				this.bonusTileCode = bonus.substring(0,bonus.indexOf('('));
+				this.bonusTileCode = bonus.substring(0, bonusOpenParenIndex);
 
-				if (parts.length > 2) {
-					this.bonusEndPoint = new NotationPoint(bonus.substring(bonus.indexOf('(')+1));
-					this.boatBonusPoint = new NotationPoint(parts[2].substring(0, parts[2].indexOf(')')));
+				if (notationParts.length > 2) {
+					this.bonusEndPoint = new NotationPoint(bonus.substring(bonusOpenParenIndex + 1));
+					this.boatBonusPoint = new NotationPoint(notationParts[2].substring(0, notationParts[2].indexOf(')')));
 				} else {
-					this.bonusEndPoint = new NotationPoint(bonus.substring(bonus.indexOf('(')+1, bonus.indexOf(')')));
+					this.bonusEndPoint = new NotationPoint(bonus.substring(bonusOpenParenIndex + 1, bonusCloseParenIndex));
 				}
 			}
 		}
