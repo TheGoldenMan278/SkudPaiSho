@@ -1,26 +1,29 @@
 // Common Notation Objects and Variables
 
-export var GUEST = "GUEST";
-export var HOST = "HOST";
-export var OTHER_PLAYER = "OTHER";
+export const GUEST = "GUEST";
+export const HOST = "HOST";
+export const OTHER_PLAYER = "OTHER";
 
 // Turn actions ----------------
-export var PLANTING = "Planting";
-export var ARRANGING = "Arranging";
+export const PLANTING = "Planting";
+export const ARRANGING = "Arranging";
 
-export var DEPLOY = "Deploy";
-export var MOVE = "Move";
-export var SETUP = "Setup";	// Because it is shorter than the old existing "Initial Setup" string
+export const DEPLOY = "Deploy";
+export const MOVE = "Move";
+export const SETUP = "Setup";	// Because it is shorter than the old existing "Initial Setup" string
 
-export var TEAM_SELECTION = "Team Selection";
+export const TEAM_SELECTION = "Team Selection";
 
-export var INITIAL_SETUP = "Initial Setup";
+export const INITIAL_SETUP = "Initial Setup";
 // -----------------------------
 
-export var DRAW_OFFER = "~~"; //"≈";
-export var DRAW_REFUSE = "=/="; //"≠";
-export var DRAW_ACCEPT = "==";
-export var PASS_TURN = "--";
+export const DRAW_OFFER = "~~"; //"≈";
+export const DRAW_REFUSE = "=/="; //"≠";
+export const DRAW_ACCEPT = "==";
+export const PASS_TURN = "--";
+
+const rowAndColumnCache = new Map();
+const notationPointCache = new Map();
 
 // =========================================================
 // RowAndColumn Object
@@ -36,17 +39,25 @@ export var PASS_TURN = "--";
  * @property {string} notationPointString - Pattern: "x,y"
  */
 export function RowAndColumn(row, col) {
+	const cacheKey = row + "," + col;
+	const cached = rowAndColumnCache.get(cacheKey);
+	if (cached) return cached;
+
+	const instance = this;
 	/** @type {number} */
-	this.row = row;
+	instance.row = row;
 	/** @type {number} */
-	this.col = col;
+	instance.col = col;
 	
 	/** @type {number} */
-	this.x = col - 8;
+	instance.x = col - 8;
 	/** @type {number} */
-	this.y = 8 - row;
+	instance.y = 8 - row;
 	/** @type {string} */
-	this.notationPointString = this.x + "," + this.y;
+	instance.notationPointString = instance.x + "," + instance.y;
+
+	rowAndColumnCache.set(cacheKey, instance);
+	return instance;
 }
 
 /**
@@ -79,17 +90,23 @@ RowAndColumn.prototype.getNotationPoint = function() {
  * @property {RowAndColumn} rowAndColumn - RowAndColumn representation of same point
  */
 export function NotationPoint(text) {
-	this.pointText = text;
+	const cached = notationPointCache.get(text);
+	if (cached) return cached;
 
-	var parts = this.pointText.split(',');
+	const instance = this;
+	instance.pointText = text;
 
-	this.x = parseInt(parts[0]);
-	this.y = parseInt(parts[1]);
+	const parts = instance.pointText.split(',');
 
-	var col = this.x + 8;
-	var row = Math.abs(this.y - 8);
+	instance.x = parseInt(parts[0], 10);
+	instance.y = parseInt(parts[1], 10);
 
-	this.rowAndColumn = new RowAndColumn(row, col);
+	const col = instance.x + 8;
+	const row = Math.abs(instance.y - 8);
+
+	instance.rowAndColumn = new RowAndColumn(row, col);
+	notationPointCache.set(text, instance);
+	return instance;
 }
 
 /**
